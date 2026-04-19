@@ -68,13 +68,16 @@
   .pick-num{position:absolute;top:6px;left:8px;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.15em;color:var(--fg-muted);background:rgba(255,255,255,.85);padding:2px 6px}
   .pick-name{position:absolute;left:0;right:0;bottom:0;padding:10px 8px 8px;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font-size:11px;letter-spacing:.1em;font-weight:500}
   .pick-name small{display:block;font-size:9px;opacity:.8;letter-spacing:.15em;text-transform:uppercase;margin-top:2px;font-weight:400}
-  .portrait-swiper{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 8px;scroll-behavior:smooth;scrollbar-width:none}
+  /* 左右滑動區：用 padding 切出 gutters 給箭頭站立 */
+  .swipe-wrap{ position: relative; padding: 0 44px; }
+  .portrait-swiper{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 4px;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .portrait-swiper::-webkit-scrollbar{display:none}
-  .portrait-swiper .pick-card{width:150px;scroll-snap-align:center;flex-shrink:0}
-  .swipe-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:34px;height:34px;background:#fff;border:1px solid var(--border-strong);cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:background .2s;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+  .portrait-swiper .pick-card{width:140px;scroll-snap-align:center;flex-shrink:0}
+  .swipe-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:50;width:38px;height:38px;background:#fff;border:1.5px solid var(--fg);cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .2s;box-shadow:0 4px 14px rgba(0,0,0,.18);border-radius:50%}
   .swipe-nav#swipe-prev{left:4px}
   .swipe-nav#swipe-next,.swipe-nav.right{right:4px;left:auto}
-  .swipe-nav:hover{background:var(--fg);color:#fff}
+  .swipe-nav:hover{background:var(--fg);color:#fff;transform:translateY(-50%) scale(1.08)}
+  .swipe-nav:active{transform:translateY(-50%) scale(.94)}
   .portrait-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transition:filter .4s ease,transform .4s ease}
   .bubble-ai,.bubble-user{max-width:82%;padding:14px 18px;font-size:14.5px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
   .bubble-ai{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:2px 12px 12px 12px}
@@ -212,43 +215,80 @@
   .pick-card{ min-height: 180px; }
   .pick-card img{ opacity:1 !important; visibility:visible !important; min-height: 100%; }
 
-  /* ===== Chat 2.0：大頭像 + 頭頂對話泡泡 ===== */
-  .chat-grid{ grid-template-columns: 1fr !important; grid-template-rows: auto 1fr auto !important; height: calc(100vh - 160px) !important; gap: 10px !important; }
-  #view-chat .card.chat-stage{ position: relative; overflow: visible !important; display: flex !important; flex-direction: column !important; align-items: center; padding: 16px 10px 10px !important; min-height: 320px; }
-  #chat-portrait{ width: 240px !important; height: 300px !important; position: relative !important; top: auto !important; right: auto !important; margin: 0 auto !important; }
-  #chat-portrait .portrait-card{ width: 240px !important; height: 300px !important; aspect-ratio: auto !important; }
+  /* ===== Chat 2.0：大頭像 + 頭頂氣泡 ===== */
+  .chat-grid{ grid-template-columns: 1fr !important; grid-template-rows: auto 1fr auto !important; height: calc(100vh - 160px) !important; gap: 8px !important; }
+  #view-chat .card.chat-stage{ position: relative; overflow: visible !important; display: flex !important; flex-direction: column !important; align-items: center; padding: 70px 10px 10px !important; min-height: 380px; }
+  #chat-portrait{ width: 220px !important; height: 280px !important; position: relative !important; top: auto !important; right: auto !important; margin: 0 auto !important; }
+  #chat-portrait .portrait-card{ width: 220px !important; height: 280px !important; aspect-ratio: auto !important; }
   #chat-portrait .portrait-label, #chat-portrait .portrait-badge{ display: block !important; }
   #chat-portrait .portrait-label{ font-size: 9px; padding: 4px 8px; }
 
-  /* 頭頂對話泡泡 */
+  /* 頭頂氣泡（固定尺寸 + 內部捲動） */
   .speech{
-    position: absolute; left: 50%; transform: translateX(-50%);
-    top: -6px;
-    max-width: calc(100% - 24px);
+    position: absolute; left: 50%; transform: translateX(-50%) translateY(-6px);
+    top: 8px;
+    width: 82%; max-width: 320px;
+    max-height: 110px; overflow-y: auto;
     background: #fff; border: 1.5px solid var(--fg);
-    padding: 12px 16px; font-size: 14px; line-height: 1.65;
-    border-radius: 14px; box-shadow: 0 6px 24px -8px rgba(0,0,0,.2);
+    padding: 10px 14px; font-size: 13px; line-height: 1.55;
+    border-radius: 14px; box-shadow: 0 8px 24px -10px rgba(0,0,0,.25);
     z-index: 20; opacity: 0; pointer-events: none;
     white-space: pre-wrap; word-break: break-word;
-    transition: opacity .3s ease, transform .3s ease;
+    transition: opacity .3s ease;
+    scrollbar-width: thin;
   }
-  .speech.show{ opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .speech.show{ opacity: 1; pointer-events: auto; }
   .speech::after{
     content: ''; position: absolute;
     left: 50%; bottom: -10px; transform: translateX(-50%);
-    border: 10px solid transparent;
+    border: 9px solid transparent;
     border-top-color: #fff;
     filter: drop-shadow(0 1px 0 var(--fg));
   }
-  /* 隱藏舊的 mood-badge（已由 speech 代替視覺回饋） */
+  /* 隱藏舊 mood-badge 視覺（由 speech 代替） */
   #view-chat #mood-badge{ display: none !important; }
-  /* Chat 標題列（人物名 + affinity） */
-  .chat-header{ display:flex; align-items:center; justify-content:space-between; padding: 6px 12px; font-size: 11px; letter-spacing: .12em; color: var(--fg-muted); text-transform: uppercase; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: rgba(255,255,255,.6); }
+  /* Chat 標題列 */
+  .chat-header{ display:flex; align-items:center; justify-content:space-between; padding: 6px 12px; font-size: 10px; letter-spacing: .12em; color: var(--fg-muted); text-transform: uppercase; border-top: 1px solid var(--border); background: rgba(255,255,255,.6); margin-top: 8px; }
   .chat-header .pn{ color: var(--fg); font-weight: 600; }
 
-  /* 對話 log 縮小（次要元素） */
+  /* 對話 log（次要元素） */
   #view-chat #chat-log{ font-size: 12.5px; padding: 10px 12px !important; }
-  #view-chat .bubble-ai, #view-chat .bubble-user{ padding: 10px 14px; font-size: 12.5px; line-height: 1.6; }
+  #view-chat .bubble-ai, #view-chat .bubble-user{ padding: 10px 14px; font-size: 12.5px; line-height: 1.6; max-width: 90%; }
+
+  /* ===== 解鎖彈窗 ===== */
+  .unlock-mask{ position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); z-index: 120; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .unlock-mask.show{ display: flex; }
+  .unlock-box{ background: #fff; border: 1px solid var(--fg); max-width: 420px; width: 100%; padding: 22px 22px 18px; animation: unlockIn .4s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes unlockIn{ from{ opacity:0; transform: translateY(20px) scale(.96); } to{ opacity:1; transform: none; } }
+  .unlock-title{ font-family: "Noto Serif TC", serif; font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .unlock-sub{ font-size: 12px; color: var(--fg-muted); margin-bottom: 18px; }
+  .unlock-card-head{ display:flex; gap:12px; align-items:center; margin-bottom: 16px; padding: 10px; border: 1px solid var(--border); }
+  .unlock-card-head img{ width: 52px; height: 66px; object-fit: cover; background: #eee; }
+  .unlock-card-head .nm{ font-weight:600; font-size: 14px; }
+  .unlock-card-head .gr{ font-size: 11px; color: var(--fg-muted); letter-spacing: .15em; text-transform: uppercase; }
+  .unlock-plan{ border: 1px solid var(--fg); padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all .2s; display: flex; justify-content: space-between; align-items: center; }
+  .unlock-plan:hover{ background: var(--fg); color: var(--bg); }
+  .unlock-plan .pn{ font-weight: 600; font-size: 14px; }
+  .unlock-plan .pp{ font-family:"Noto Serif TC",serif; font-size: 18px; }
+  .unlock-plan .pd{ font-size: 10px; letter-spacing: .15em; color: currentColor; opacity: .7; }
+  .unlock-plan.rec{ background: var(--fg); color: var(--bg); }
+  .unlock-close{ display:block; text-align:center; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid var(--border); width: 100%; cursor: pointer; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+  .unlock-close:hover{ border-color: var(--fg); }
+
+  /* ===== 收藏按鈕 + 已收藏卡片 ===== */
+  .save-bar{ display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border); background: #fff; }
+  .save-bar .lbl{ font-size: 11px; letter-spacing: .18em; color: var(--fg-muted); text-transform: uppercase; }
+  .save-bar .cnt{ font-weight: 600; }
+  .save-btn{ padding: 8px 14px; border: 1px solid var(--fg); background: #fff; color: var(--fg); cursor: pointer; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; transition: all .2s; }
+  .save-btn:hover{ background: var(--fg); color: #fff; }
+  .save-btn.saved{ background: var(--fg); color: #fff; }
+  .saved-grid{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .saved-card{ aspect-ratio: 4/5; border: 1px solid var(--border); position: relative; overflow: hidden; cursor: pointer; transition: all .25s; }
+  .saved-card img{ width:100%; height:100%; object-fit: cover; object-position: center top; display: block; }
+  .saved-card:hover{ transform: translateY(-2px); border-color: var(--fg); }
+  .saved-card .s-name{ position:absolute; left:0; right:0; bottom:0; padding: 10px 8px; background: linear-gradient(transparent, rgba(0,0,0,.75)); color: #fff; font-size: 11px; }
+  .saved-card .s-name small{ display:block; font-size: 9px; opacity:.8; margin-top: 2px; }
+  .saved-card .rm{ position: absolute; top: 6px; right: 6px; width: 22px; height:22px; background: rgba(0,0,0,.6); color: #fff; border: none; cursor: pointer; font-size: 11px; display:flex; align-items:center; justify-content:center; }
 
   @media (max-width:768px){.cat-tab{margin-right:12px;font-size:11px;padding:6px 0}}
 </style>
@@ -268,8 +308,8 @@
       <button data-go="home" class="nav-link active">Home</button>
       <button data-go="create" class="nav-link">Create</button>
       <button data-go="chat" class="nav-link">Converse</button>
-      <button data-go="omo" class="nav-link">創造驚喜</button>
-      <button data-go="memories" class="nav-link">Memories</button>
+      <button data-go="omo" class="nav-link">Surprise</button>
+      <button data-go="memories" class="nav-link">Memory</button>
     </nav>
     <div class="flex items-center gap-3">
       <div class="text-xs mono text-neutral-600 hidden sm:block">餘額 <span class="font-semibold text-black" id="balance-label">NT$ 0</span></div>
@@ -280,8 +320,8 @@
     <button data-go="home" class="nav-link active whitespace-nowrap">Home</button>
     <button data-go="create" class="nav-link whitespace-nowrap">Create</button>
     <button data-go="chat" class="nav-link whitespace-nowrap">Converse</button>
-    <button data-go="omo" class="nav-link whitespace-nowrap">OMO</button>
-    <button data-go="memories" class="nav-link whitespace-nowrap">Memories</button>
+    <button data-go="omo" class="nav-link whitespace-nowrap">Surprise</button>
+    <button data-go="memories" class="nav-link whitespace-nowrap">Memory</button>
   </div>
 </header>
 
@@ -301,7 +341,7 @@
       <div class="mt-14 grid grid-cols-3 gap-8 max-w-md">
         <div><div class="serif text-3xl font-medium">28</div><div class="text-xs tracking-widest text-neutral-500 uppercase mt-1">Archetypes</div></div>
         <div><div class="serif text-3xl font-medium">9</div><div class="text-xs tracking-widest text-neutral-500 uppercase mt-1">Emotions</div></div>
-        <div><div class="serif text-3xl font-medium">OMO</div><div class="text-xs tracking-widest text-neutral-500 uppercase mt-1">Gift Layer</div></div>
+        <div><div class="serif text-3xl font-medium">∞</div><div class="text-xs tracking-widest text-neutral-500 uppercase mt-1">Surprise</div></div>
       </div>
     </div>
     <div class="relative">
@@ -373,14 +413,22 @@
               </div>
             </div>
             <!-- 左右滑動式選擇器 -->
-            <div class="relative">
-              <button id="swipe-prev" class="swipe-nav" aria-label="prev">←</button>
-              <button id="swipe-next" class="swipe-nav right" aria-label="next">→</button>
-              <div id="portrait-swiper" class="portrait-swiper scrollbar"></div>
+            <div class="swipe-wrap">
+              <button id="swipe-prev" class="swipe-nav" aria-label="prev">‹</button>
+              <button id="swipe-next" class="swipe-nav right" aria-label="next">›</button>
+              <div id="portrait-swiper" class="portrait-swiper"></div>
             </div>
             <div class="flex items-center justify-between mt-3 text-[10px] mono tracking-widest text-neutral-500 uppercase">
               <span>← Swipe · 左右滑動挑選</span>
               <span id="swipe-index">01 / 30</span>
+            </div>
+            <!-- 收藏區 -->
+            <div class="save-bar">
+              <div>
+                <div class="lbl">MY COLLECTION · 我的收藏</div>
+                <div class="cnt" id="save-count-label">0 / 3（免費）</div>
+              </div>
+              <button id="save-toggle-btn" class="save-btn" onclick="toggleSaveCurrent()">SAVE</button>
             </div>
           </div>
           <div class="mb-12">
@@ -821,11 +869,28 @@
   </div>
 </section>
 
-<!-- MEMORIES -->
+<!-- MEMORY -->
 <section id="view-memories" class="view">
   <div class="max-w-5xl mx-auto px-6 py-12">
+    <!-- 我的收藏（人物） -->
+    <div class="mb-12">
+      <div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-3">Collection · 我的收藏</div>
+      <h2 class="sec">你選擇的他們。</h2>
+      <div class="flex items-center justify-between mt-4 mb-4 text-xs text-neutral-500">
+        <span id="mem-save-count">0 / 3 位免費名額</span>
+        <button class="save-btn" onclick="openBuySlot()">加購名額</button>
+      </div>
+      <div id="saved-grid" class="saved-grid"></div>
+      <div id="saved-empty" class="card p-8 text-center text-neutral-500" style="display:none;">
+        <div class="serif text-lg mb-2">還沒有收藏</div>
+        <div class="text-xs mb-4">前往 Create 挑選你喜歡的人，點擊 SAVE 加入收藏。</div>
+        <button onclick="go('create')" class="btn-primary text-sm" style="padding:8px 16px;">前往 Create →</button>
+      </div>
+    </div>
+
+    <!-- 對話記憶 -->
     <div class="mb-10">
-      <div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-3">Archive · 記憶庫</div>
+      <div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-3">Messages · 對話記憶</div>
       <h2 class="sec">你們一起經過的字。</h2>
     </div>
     <div id="memory-list" class="grid sm:grid-cols-2 gap-3"></div>
@@ -837,6 +902,35 @@
 </section>
 
 </main>
+
+<!-- 解鎖彈窗 -->
+<div id="unlock-mask" class="unlock-mask">
+  <div class="unlock-box">
+    <div class="unlock-title">解鎖 <span id="unlock-who">這位藝人</span></div>
+    <div class="unlock-sub" id="unlock-sub">此藝人屬於進階方案，請選擇一個訂閱方案立即解鎖。</div>
+    <div class="unlock-card-head">
+      <img id="unlock-pic" src="" alt="" />
+      <div>
+        <div class="nm" id="unlock-name">—</div>
+        <div class="gr" id="unlock-group">—</div>
+      </div>
+    </div>
+    <div id="unlock-plans"></div>
+    <button class="unlock-close" onclick="closeUnlock()">先不要</button>
+  </div>
+</div>
+
+<!-- 加購名額彈窗 -->
+<div id="slot-mask" class="unlock-mask">
+  <div class="unlock-box">
+    <div class="unlock-title">加購收藏名額</div>
+    <div class="unlock-sub">你已用完 3 個免費名額，可以加購更多收藏格。</div>
+    <div class="unlock-plan" onclick="buySlot(1, 99)"><div><div class="pn">+1 個名額</div><div class="pd">單次購買</div></div><div class="pp">$99</div></div>
+    <div class="unlock-plan" onclick="buySlot(3, 249)"><div><div class="pn">+3 個名額</div><div class="pd">划算組合</div></div><div class="pp">$249</div></div>
+    <div class="unlock-plan rec" onclick="buySlot(10, 699)"><div><div class="pn">+10 個名額</div><div class="pd">最超值</div></div><div class="pp">$699</div></div>
+    <button class="unlock-close" onclick="closeBuySlot()">先不要</button>
+  </div>
+</div>
 
 <div id="health-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm">
   <div class="card p-10 max-w-sm m-4 text-center">
@@ -853,7 +947,7 @@
   <button data-go="create"><span class="icon">✎</span><span>CREATE</span></button>
   <button data-go="chat"><span class="icon">◎</span><span>CHAT</span></button>
   <button data-go="omo"><span class="icon">✦</span><span>SURPRISE</span></button>
-  <button data-go="memories"><span class="icon">◇</span><span>ARCHIVE</span></button>
+  <button data-go="memories"><span class="icon">◇</span><span>MEMORY</span></button>
 </nav>
 
 <footer class="border-t border-neutral-200 mt-24">

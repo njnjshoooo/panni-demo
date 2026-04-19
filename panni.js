@@ -1269,9 +1269,7 @@ function renderPortraitGrid() {
     el.addEventListener('click', () => {
       const pid = parseInt(el.dataset.pid);
       if (!isUnlocked(pid)) {
-        const tier = ARCHETYPES[pid].tier;
-        const tierName = tier === 'signature' ? '滿滿儀式感 · $8,888' : tier === 'romance' ? '戀愛小驚喜 · $3,000' : '';
-        if (confirm(`這位藝人需要升級方案才能解鎖。\n所需方案：${tierName}\n\n是否前往訂閱？`)) { go('omo'); }
+        openUnlock(pid);
         return;
       }
       store.partner.portraitId = pid;
@@ -1279,6 +1277,7 @@ function renderPortraitGrid() {
       el.classList.add('on');
       updateSwipeIndex();
       renderPersonaCard();
+      updateSaveBar();
       el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       rebuildAll();
     });
@@ -1694,6 +1693,156 @@ function showSpeech(text) {
     observer.observe(log, { childList: true });
   }
 })();
+
+/* ================================================================
+   =========== Phase 4：收藏系統 + 解鎖彈窗 + Tab 同步 ===============
+   ================================================================ */
+
+/* 收藏狀態 */
+store.savedIds = store.savedIds || [];
+store.maxSlots = store.maxSlots || 3;
+
+function currentFreeSlots() { return store.maxSlots; }
+
+function isSaved(pid) { return store.savedIds.includes(pid); }
+
+window.toggleSaveCurrent = function () {
+  const pid = store.partner.portraitId;
+  if (isSaved(pid)) {
+    store.savedIds = store.savedIds.filter(x => x !== pid);
+  } else {
+    if (store.savedIds.length >= store.maxSlots) {
+      openBuySlot();
+      return;
+    }
+    store.savedIds.push(pid);
+  }
+  updateSaveBar();
+  renderSavedGrid();
+};
+
+function updateSaveBar() {
+  const pid = store.partner.portraitId;
+  const btn = document.getElementById('save-toggle-btn');
+  const cnt = document.getElementById('save-count-label');
+  if (btn) {
+    const saved = isSaved(pid);
+    btn.textContent = saved ? '✓ SAVED' : 'SAVE';
+    btn.classList.toggle('saved', saved);
+  }
+  if (cnt) {
+    const n = store.savedIds.length;
+    cnt.textContent = `${n} / ${store.maxSlots}（名額）`;
+  }
+  const memCount = document.getElementById('mem-save-count');
+  if (memCount) memCount.textContent = `${store.savedIds.length} / ${store.maxSlots} 個名額`;
+}
+
+function renderSavedGrid() {
+  const grid = document.getElementById('saved-grid');
+  const empty = document.getElementById('saved-empty');
+  if (!grid) return;
+  if (store.savedIds.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  grid.innerHTML = store.savedIds.map(pid => {
+    const a = ARCHETYPES[pid];
+    return `
+      <div class="saved-card" data-pid="${pid}">
+        <img src="${a.img}" alt="${a.name}" />
+        <div class="s-name">${a.name}<small>${a.group || ''}</small></div>
+        <button class="rm" onclick="event.stopPropagation();unsaveId(${pid})">×</button>
+      </div>`;
+  }).join('');
+  grid.querySelectorAll('.saved-card').forEach(el => {
+    el.addEventListener('click', () => {
+      store.partner.portraitId = parseInt(el.dataset.pid);
+      rebuildAll();
+      go('create');
+    });
+  });
+}
+window.unsaveId = function (pid) {
+  store.savedIds = store.savedIds.filter(x => x !== pid);
+  updateSaveBar();
+  renderSavedGrid();
+};
+
+/* 解鎖彈窗 */
+window.openUnlock = function (pid) {
+  const a = ARCHETYPES[pid];
+  if (!a) return;
+  document.getElementById('unlock-who').textContent = a.name;
+  document.getElementById('unlock-name').textContent = a.name;
+  document.getElementById('unlock-group').textContent = a.group || '';
+  document.getElementById('unlock-pic').src = a.img;
+  const requiredTier = a.tier;
+  const plans = [];
+  if (TIER_LEVEL[requiredTier] <= TIER_LEVEL.ambiguous) plans.push({ name: '曖昧日常', amount: 899, desc: '每月 · 解鎖所有曖昧級' });
+  if (TIER_LEVEL[requiredTier] <= TIER_LEVEL.romance) plans.push({ name: '戀愛小驚喜', amount: 3000, desc: '每月 · 解鎖曖昧+戀愛級', rec: requiredTier === 'romance' });
+  if (TIER_LEVEL[requiredTier] <= TIER_LEVEL.signature) plans.push({ name: '滿滿儀式感', amount: 8888, desc: '每月 · 解鎖全部 30 位', rec: requiredTier === 'signature' });
+  const plansEl = document.getElementById('unlock-plans');
+  plansEl.innerHTML = plans.map(p => `
+    <div class="unlock-plan ${p.rec?'rec':''}" onclick="confirmUnlock('${p.name}', ${p.amount}, ${pid})">
+      <div><div class="pn">${p.name}</div><div class="pd">${p.desc}</div></div>
+      <div class="pp">NT$ ${p.amount.toLocaleString()}</div>
+    </div>
+  `).join('');
+  document.getElementById('unlock-sub').textContent = `解鎖後可立即與 ${a.name} 對話。選擇適合你的方案：`;
+  document.getElementById('unlock-mask').classList.add('show');
+};
+window.closeUnlock = function () {
+  document.getElementById('unlock-mask').classList.remove('show');
+};
+window.confirmUnlock = function (planName, amount, pid) {
+  subscribe(planName, amount);
+  // 訂閱後自動選取該藝人
+  store.partner.portraitId = pid;
+  rebuildAll();
+  renderPortraitGrid();
+  renderPersonaCard();
+  updateSaveBar();
+  closeUnlock();
+};
+
+/* 加購名額 */
+window.openBuySlot = function () { document.getElementById('slot-mask').classList.add('show'); };
+window.closeBuySlot = function () { document.getElementById('slot-mask').classList.remove('show'); };
+window.buySlot = function (n, price) {
+  store.maxSlots += n;
+  store.wallet.history.unshift({ type: '加購名額', name: `+${n} 收藏格`, amount: price, time: new Date().toLocaleString('zh-TW') });
+  renderGiftHistory();
+  updateSaveBar();
+  closeBuySlot();
+  alert(`已加購 ${n} 個收藏名額（NT$ ${price}）\n目前共 ${store.maxSlots} 個名額。`);
+};
+
+/* go() 同步 tabbar 啟用狀態 */
+const _origGo = go;
+window.go = function (view) {
+  _origGo(view);
+  document.querySelectorAll('[data-go]').forEach(b => {
+    b.classList.toggle('active', b.dataset.go === view);
+  });
+  if (view === 'create') setTimeout(updateSaveBar, 60);
+  if (view === 'memories') setTimeout(renderSavedGrid, 60);
+};
+
+/* 攔截 Memory 切換時初始化收藏區 */
+document.querySelectorAll('[data-go="memories"]').forEach(b =>
+  b.addEventListener('click', () => setTimeout(renderSavedGrid, 80))
+);
+
+/* 讓 quickSend 也觸發 speech bubble（它呼叫 sendMessage） */
+window.quickSend = function (t) {
+  if (typeof sendMessage === 'function') sendMessage(t);
+};
+
+/* 初始化 Save Bar 顯示 */
+setTimeout(updateSaveBar, 300);
 
 /* R. 初始渲染 */
 renderPortrait(document.getElementById('hero-portrait'), store.partner);
