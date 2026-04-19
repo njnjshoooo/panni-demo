@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>PanNi — 伴你 · 臉紅體驗</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAF8;--surface:#FFFFFF;--fg:#0A0A0A;--fg-muted:#5A5A5A;--fg-subtle:#9A9A9A;
+    --border:#E5E5E2;--border-strong:#1A1A1A;
+  }
+  *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+  html,body{font-family:"Noto Sans TC","Helvetica Neue","PingFang TC",system-ui,sans-serif;background:var(--bg);color:var(--fg);letter-spacing:.01em;overflow-x:hidden}
+  .serif{font-family:"Noto Serif TC","Times New Roman",serif;letter-spacing:.02em}
+  .mono{font-family:"JetBrains Mono","SF Mono",Menlo,monospace}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:4px}
+  .hairline{border-bottom:1px solid var(--border)}
+  .btn-primary{background:var(--fg);color:var(--bg);padding:14px 28px;border-radius:2px;font-weight:500;letter-spacing:.1em;transition:background .2s,transform .2s;display:inline-flex;align-items:center;gap:10px;border:1px solid var(--fg);cursor:pointer}
+  .btn-primary:hover{background:#333;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--fg);padding:14px 28px;border-radius:2px;font-weight:500;letter-spacing:.1em;border:1px solid var(--fg);transition:background .2s,color .2s;cursor:pointer}
+  .btn-ghost:hover{background:var(--fg);color:var(--bg)}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:2px;background:#F0F0EE;color:#3A3A3A;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .nav-link{position:relative;padding:6px 0;margin:0 14px;font-size:13px;letter-spacing:.15em;color:var(--fg-muted);text-transform:uppercase;transition:color .2s;cursor:pointer;background:transparent;border:none}
+  .nav-link:hover{color:var(--fg)}
+  .nav-link.active{color:var(--fg)}
+  .nav-link.active::after{content:'';position:absolute;left:0;right:0;bottom:-2px;height:1px;background:var(--fg)}
+  .input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border-strong);padding:10px 0;font-size:15px;color:var(--fg);outline:none;border-radius:0;transition:border-color .2s;font-family:inherit}
+  .input:focus{border-bottom-color:var(--fg)}
+  .input::placeholder{color:var(--fg-subtle)}
+  .textarea{width:100%;background:transparent;border:1px solid var(--border-strong);padding:12px 14px;font-size:14px;outline:none;border-radius:2px;font-family:inherit;color:var(--fg);resize:none}
+  .textarea:focus{border-color:var(--fg)}
+  .opt{padding:9px 14px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font-size:13px;letter-spacing:.05em;border-radius:2px;cursor:pointer;transition:all .2s;font-family:inherit}
+  .opt:hover{background:#F2F2F0}
+  .opt.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .swatch{width:30px;height:30px;border-radius:0;border:1px solid var(--border-strong);cursor:pointer;transition:transform .15s}
+  .swatch:hover{transform:scale(1.1)}
+  .swatch.on{outline:2px solid var(--fg);outline-offset:3px}
+  .slider-row{display:flex;align-items:center;gap:14px;margin:14px 0}
+  .slider-row label{width:72px;font-size:10px;letter-spacing:.15em;color:var(--fg-muted);text-transform:uppercase}
+  .slider-row input[type=range]{flex:1;-webkit-appearance:none;height:1px;background:var(--fg);outline:none}
+  .slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--fg);cursor:pointer;border-radius:0}
+  .slider-row .val{min-width:42px;text-align:right;font-size:11px;color:var(--fg-muted);font-family:"JetBrains Mono",monospace}
+  .portrait-card{position:relative;width:100%;aspect-ratio:4/5;background:linear-gradient(180deg,#F5F3EF,#E8E5DE);border:1px solid var(--border-strong);border-radius:2px;overflow:hidden;transition:transform .4s ease,filter .4s ease}
+  .portrait-card svg{width:100%;height:100%;display:block;transition:filter .4s ease,transform .4s ease}
+  .portrait-label{position:absolute;left:12px;bottom:12px;padding:6px 12px;background:rgba(255,255,255,0.92);color:var(--fg);font-size:11px;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--border-strong)}
+  .portrait-num{position:absolute;top:10px;left:12px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;color:var(--fg-muted)}
+  .portrait-badge{position:absolute;top:10px;right:12px;padding:4px 10px;background:var(--fg);color:var(--bg);font-size:10px;letter-spacing:.2em}
+  .em-idle .portrait-card img,.em-idle .portrait-card svg{transform:none}
+  .em-happy .portrait-card img,.em-happy .portrait-card svg{transform:scale(1.02);filter:brightness(1.04)!important}
+  .em-caring .portrait-card img,.em-caring .portrait-card svg{transform:rotate(-1.5deg)}
+  .em-shy .portrait-card img,.em-shy .portrait-card svg{transform:rotate(.8deg);filter:brightness(1.03) saturate(1.1)!important}
+  .em-thinking .portrait-card img,.em-thinking .portrait-card svg{transform:rotate(1.2deg);filter:saturate(.85)!important}
+  .em-excited .portrait-card img,.em-excited .portrait-card svg{animation:pulse .7s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  .em-hug .portrait-card img,.em-hug .portrait-card svg{transform:scale(1.05)}
+  .em-sleepy .portrait-card img,.em-sleepy .portrait-card svg{filter:blur(.6px) brightness(.92)!important;animation:sway 3s ease-in-out infinite}
+  @keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-1deg)}}
+  .em-sad .portrait-card img,.em-sad .portrait-card svg{transform:translateY(3px);filter:brightness(.88) contrast(1.05) saturate(.7)!important}
+  .pick-card{position:relative;aspect-ratio:4/5;border:1px solid var(--border);background:#F0EDE8;cursor:pointer;transition:all .25s ease;overflow:hidden;flex-shrink:0}
+  .pick-card img{width:100%;height:100%;display:block;object-fit:cover;object-position:center}
+  .pick-card:hover{transform:translateY(-2px);border-color:var(--fg)}
+  .pick-card.on{border:2px solid var(--fg);box-shadow:0 6px 20px -8px rgba(0,0,0,0.25)}
+  .pick-card.on::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:var(--fg);color:white;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .pick-num{position:absolute;top:6px;left:8px;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.15em;color:var(--fg-muted);background:rgba(255,255,255,.85);padding:2px 6px}
+  .pick-name{position:absolute;left:0;right:0;bottom:0;padding:10px 8px 8px;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font-size:11px;letter-spacing:.1em;font-weight:500}
+  .pick-name small{display:block;font-size:9px;opacity:.8;letter-spacing:.15em;text-transform:uppercase;margin-top:2px;font-weight:400}
+  .portrait-swiper{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 40px;scroll-behavior:smooth}
+  .portrait-swiper .pick-card{width:180px;scroll-snap-align:center}
+  .swipe-nav{position:absolute;top:50%;left:-4px;transform:translateY(-50%);z-index:5;width:36px;height:36px;background:#fff;border:1px solid var(--border-strong);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+  .swipe-nav.right{left:auto;right:-4px}
+  .swipe-nav:hover{background:var(--fg);color:#fff}
+  .portrait-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transition:filter .4s ease,transform .4s ease}
+  .bubble-ai,.bubble-user{max-width:82%;padding:14px 18px;font-size:14.5px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+  .bubble-ai{background:var(--surface);border:1px solid var(--border);color:var(--fg);border-radius:2px 12px 12px 12px}
+  .bubble-user{background:var(--fg);color:var(--bg);border-radius:12px 2px 12px 12px}
+  .bubble-enter{animation:slideIn .4s ease both}
+  @keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .typing-dot{width:6px;height:6px;background:var(--fg);display:inline-block;margin:0 2px;animation:typing 1.4s infinite ease-in-out}
+  .typing-dot:nth-child(2){animation-delay:.15s}
+  .typing-dot:nth-child(3){animation-delay:.3s}
+  @keyframes typing{0%,80%,100%{transform:scale(.4);opacity:.3}40%{transform:scale(1);opacity:1}}
+  .view{display:none}
+  .view.active{display:block;animation:fadeIn .5s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .scrollbar::-webkit-scrollbar{width:6px;height:6px}
+  .scrollbar::-webkit-scrollbar-thumb{background:#CCC;border-radius:0}
+  .scrollbar::-webkit-scrollbar-track{background:transparent}
+  .plan-card{border:1px solid var(--border-strong);padding:36px 32px;background:var(--surface);position:relative;transition:transform .3s ease}
+  .plan-card.featured{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .plan-card:hover{transform:translateY(-4px)}
+  .plan-tag{position:absolute;top:-12px;left:24px;background:var(--bg);padding:4px 12px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--fg)}
+  .plan-card.featured .plan-tag{background:var(--fg);color:var(--bg)}
+  .plan-price{font-family:"Noto Serif TC",serif;font-size:42px;font-weight:500;line-height:1}
+  .plan-gift{display:flex;gap:10px;padding:10px 0;border-bottom:1px dashed currentColor;font-size:13px;opacity:.85}
+  .plan-gift:last-child{border-bottom:none}
+  .plan-gift .gift-key{font-weight:600;min-width:72px;opacity:1}
+  h1.hero{font-family:"Noto Serif TC",serif;font-weight:500;font-size:clamp(48px,7vw,96px);line-height:.98;letter-spacing:-0.01em}
+  h2.sec{font-family:"Noto Serif TC",serif;font-weight:500;font-size:clamp(28px,3.5vw,42px);line-height:1.1;letter-spacing:-0.01em}
+  .progress-track{height:1px;background:var(--border)}
+  .progress-fill{height:1px;background:var(--fg);transition:width .5s}
+  .cat-tab{padding:8px 0;margin-right:28px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--fg-subtle);border-bottom:1px solid transparent;cursor:pointer;transition:all .2s;background:transparent;border-left:none;border-right:none;border-top:none;font-family:inherit}
+  .cat-tab:hover{color:var(--fg)}
+  .cat-tab.active{color:var(--fg);border-bottom-color:var(--fg)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}
+  .cal-cell{background:var(--surface);padding:10px 8px;min-height:68px;font-size:12px;position:relative}
+  .cal-cell.head{background:#F5F3EF;font-size:10px;letter-spacing:.2em;text-align:center;padding:8px;min-height:auto}
+  .cal-cell.today{background:#111;color:#fff}
+  .cal-cell .evt{position:absolute;left:6px;right:6px;bottom:6px;background:var(--fg);color:var(--bg);padding:2px 6px;font-size:9px;letter-spacing:.1em;line-height:1.3}
+  .cal-cell.today .evt{background:#fff;color:#111}
+  .personality-option{cursor:pointer;transition:all .2s}
+  .personality-option.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .personality-option.on .text-neutral-500,.personality-option.on .text-neutral-600{color:rgba(255,255,255,.7)!important}
+  .need-opt.on,.daily-opt.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .need-opt.on .text-neutral-500,.daily-opt.on .text-neutral-500{color:rgba(255,255,255,.7)!important}
+  .topup-btn{cursor:pointer;transition:all .2s}
+  .topup-btn:hover{background:var(--fg);color:var(--bg)}
+  .topup-btn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  /* === 手機優先：整體框架 === */
+  main{ max-width: 520px; margin: 0 auto; }
+  .max-w-7xl{ max-width: 520px !important; }
+  .max-w-5xl{ max-width: 520px !important; }
+  .max-w-6xl{ max-width: 520px !important; }
+  body{ background: #EEEAE2; }
+  main, header > div { background: var(--bg); }
+  header{ max-width: 520px; left: 50% !important; transform: translateX(-50%); right: auto !important; }
+  footer{ max-width: 520px; margin-left: auto; margin-right: auto; }
+
+  /* Create：強制單欄 + 小型預覽 */
+  #view-create .grid.md\:grid-cols-\[380px_1fr\]{ grid-template-columns: 1fr !important; gap: 18px !important; }
+  #view-create .sticky.md\:top-28{ position: relative !important; top: auto !important; }
+  #view-create #preview-portrait{ max-width: 220px; margin: 0 auto; }
+  .cat-panel h2,.cat-panel h3{ font-size: 18px; }
+  .grid.md\:grid-cols-\[1\.2fr_1fr\]{ grid-template-columns: 1fr !important; }
+  #view-home .hero{ font-size: 44px !important; }
+  #view-home #hero-portrait{ max-width: 280px; margin: 16px auto 0; }
+
+  /* OMO 卡片堆疊 */
+  .grid.md\:grid-cols-3{ grid-template-columns: 1fr !important; gap: 20px !important; }
+  .grid.md\:grid-cols-2{ grid-template-columns: 1fr !important; }
+
+  /* Chat：縮小人像，放大對話 */
+  .chat-grid{ grid-template-columns: 1fr !important; height: calc(100vh - 180px) !important; grid-template-rows: 100px 1fr; gap: 8px !important; }
+  #chat-portrait{ width: 80px !important; height: 100px; position: absolute; right: 12px; top: 12px; }
+  #chat-portrait .portrait-card{ width: 80px; height: 100px; aspect-ratio: auto; }
+  #chat-portrait .portrait-label,#chat-portrait .portrait-num,#chat-portrait .portrait-badge{ display:none; }
+  .chat-grid > .card:first-child{ display: flex; flex-direction: row; align-items: center; padding: 10px 14px; min-height: 100px; }
+  .chat-grid > .card:first-child #mood-badge{ position: static; flex: 1; text-align: left; padding-right: 100px; }
+  .chat-grid > .card:first-child .progress-track,
+  .chat-grid > .card:first-child div[class*="affinity"]{ display:none; }
+  .chat-grid > .card:first-child::before{
+    content: attr(data-sub); display:block; position:absolute; bottom:8px; left:14px;
+    font-size: 9px; letter-spacing:.2em; color: var(--fg-muted); text-transform: uppercase;
+  }
+
+  /* 固定底部 Create 操作列 */
+  .create-nav{ position: sticky; bottom: 0; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); padding: 12px 16px; margin: 20px -16px 0; border-top: 1px solid var(--border); z-index: 10; }
+
+  /* 底部 Tab Bar 導航 */
+  .tabbar{ position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 520px; background: #fff; border-top: 1px solid var(--border); z-index: 60; display: flex; padding: 10px 6px env(safe-area-inset-bottom); }
+  .tabbar button{ flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; background:transparent; border:none; cursor:pointer; padding: 6px 4px; font-size: 10px; letter-spacing: .15em; color: var(--fg-subtle); text-transform: uppercase; }
+  .tabbar button.active{ color: var(--fg); }
+  .tabbar button .icon{ font-size: 18px; line-height: 1; }
+
+  main{ padding-bottom: 80px; }
+
+  /* 照片飾品疊加層 */
+  .portrait-card .acc-layer{ position:absolute; inset:0; pointer-events:none; z-index: 2; }
+  .portrait-card .hair-tint{ position:absolute; left:0; right:0; top:0; height: 38%; pointer-events:none; mix-blend-mode: color; z-index: 3; opacity: .55; }
+  .portrait-card .outfit-tint{ position:absolute; left:0; right:0; bottom:0; height: 22%; pointer-events:none; mix-blend-mode: multiply; opacity: .65; z-index: 3; }
+
+  /* 360 旋轉展示（以 3D 轉動 illusion） */
+  .portrait-card.spinning img{ animation: spin3d 4s linear infinite; }
+  @keyframes spin3d { 0%{transform: perspective(800px) rotateY(0deg)} 50%{transform: perspective(800px) rotateY(15deg) scale(1.03)} 100%{transform: perspective(800px) rotateY(0deg)} }
+  .spin-btn{ position:absolute; right:10px; top:10px; z-index: 5; width: 28px; height: 28px; border-radius: 9999px; background: rgba(255,255,255,.92); border: 1px solid var(--border-strong); font-size: 12px; cursor: pointer; display:flex; align-items:center; justify-content:center; }
+
+  /* 人物知識庫 · 人設卡 */
+  .persona-card{ border: 1px solid var(--border); padding: 12px 14px; margin-top: 12px; background: #F7F5F0; font-size: 12px; line-height: 1.7; }
+  .persona-title{ font-size: 10px; letter-spacing:.25em; color: var(--fg-muted); text-transform: uppercase; margin-bottom: 6px; }
+  .persona-row{ display:flex; gap: 8px; margin: 3px 0; }
+  .persona-row .k{ min-width: 48px; color: var(--fg-muted); font-size: 11px; }
+
+  /* 禮物 Gallery */
+  .gift-gallery{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .gift-item{ border: 1px solid var(--border); background: #fff; padding: 14px 8px 10px; text-align:center; transition: transform .25s; }
+  .gift-item:hover{ transform: translateY(-2px); border-color: var(--fg); }
+  .gift-item .emo{ font-size: 32px; line-height: 1; margin-bottom: 8px; display: block; }
+  .gift-item .gname{ font-size: 11px; color: var(--fg); line-height: 1.35; }
+  .gift-item .gprice{ font-size: 9px; color: var(--fg-subtle); margin-top: 4px; letter-spacing: .1em; }
+
+  /* 鎖定（商業模式） */
+  .pick-card.locked{ position: relative; }
+  .pick-card.locked::before{ content:''; position:absolute; inset:0; background: rgba(0,0,0,.55); z-index: 2; }
+  .pick-card.locked::after{ content: attr(data-tier); position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-size:10px; letter-spacing:.2em; z-index:3; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'><rect x='5' y='11' width='14' height='10' rx='1'/><path d='M8 11V7a4 4 0 0 1 8 0v4'/></svg>") center 30% / 22px no-repeat; padding-top: 48px; }
+
+  /* ===== 手機版照片可見性修復 ===== */
+  .portrait-card{ display:block !important; min-height: 180px; }
+  .portrait-card img{ opacity:1 !important; visibility:visible !important; display:block !important; background:#E8E5DE; }
+  #hero-portrait, #preview-portrait, #chat-portrait{ display:block !important; }
+  #hero-portrait{ width: 280px !important; max-width: calc(100vw - 48px); aspect-ratio: 4/5; }
+  #preview-portrait{ width: 220px !important; max-width: calc(100vw - 48px); aspect-ratio: 4/5; }
+  #view-home #hero-portrait .portrait-card,
+  #view-create #preview-portrait .portrait-card{ width: 100%; height: 100%; }
+  .chat-grid{ grid-template-rows: 124px 1fr !important; }
+  #chat-portrait{ width: 80px !important; height: 100px !important; position: absolute !important; right: 12px !important; top: 12px !important; }
+  #chat-portrait .portrait-card{ width: 80px !important; height: 100px !important; aspect-ratio: auto !important; min-height: 100px; }
+  .pick-card{ min-height: 180px; }
+  .pick-card img{ opacity:1 !important; visibility:visible !important; min-height: 100%; }
+
+  @media (max-width:768px){.cat-tab{margin-right:12px;font-size:11px;padding:6px 0}}
+</style>
+</head>
+<body>
+
+<header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm hairline">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 border border-black flex items-center justify-center serif font-bold">P</div>
+      <div>
+        <div class="serif font-semibold tracking-wider text-lg">PanNi</div>
+        <div class="text-[10px] tracking-[.25em] text-neutral-500 uppercase -mt-1">伴你 · 臉紅體驗</div>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center">
+      <button data-go="home" class="nav-link active">Home</button>
+      <button data-go="create" class="nav-link">Create</button>
+      <button data-go="chat" class="nav-link">Converse</button>
+      <button data-go="omo" class="nav-link">創造驚喜</button>
+      <button data-go="memories" class="nav-link">Memories</button>
+    </nav>
+    <div class="flex items-center gap-3">
+      <div class="text-xs mono text-neutral-600 hidden sm:block">餘額 <span class="font-semibold text-black" id="balance-label">NT$ 0</span></div>
+      <button data-go="omo" class="btn-primary text-xs" style="padding:8px 14px;">儲值</button>
+    </div>
+  </div>
+  <div class="md:hidden border-t border-neutral-200 px-6 py-2 flex gap-4 overflow-x-auto scrollbar">
+    <button data-go="home" class="nav-link active whitespace-nowrap">Home</button>
+    <button data-go="create" class="nav-link whitespace-nowrap">Create</button>
+    <button data-go="chat" class="nav-link whitespace-nowrap">Converse</button>
+    <button data-go="omo" class="nav-link whitespace-nowrap">OMO</button>
+    <button data-go="memories" class="nav-link whitespace-nowrap">Memories</button>
+  </div>
+</header>
+
+<main class="pt-24">
+
+<!-- HOME -->
+<section id="view-home" class="view active">
+  <div class="max-w-7xl mx-auto px-6 py-10 md:py-20 grid md:grid-cols-[1.2fr_1fr] gap-12 items-center">
+    <div>
+      <div class="chip mb-8">Editorial · 理性陪伴系統</div>
+      <h1 class="hero mb-8">Presence,<br/>engineered<br/>with <span class="italic">care</span>.</h1>
+      <p class="text-neutral-600 text-lg leading-relaxed max-w-md mb-10">以知性設計的情感陪伴。我們不製造幻覺，而是提供一種穩定、可靠、受你控制的親密形式——從對話到實體驚喜，皆然。</p>
+      <div class="flex flex-wrap gap-3">
+        <button onclick="go('create')" class="btn-primary"><span>建立伴侶</span><span>→</span></button>
+        <button onclick="go('omo')" class="btn-ghost">創造驚喜</button>
+      </div>
+      <div class="mt-14 grid grid-cols-3 gap-8 max-w-md">
+        <div><div class="serif text-3xl font-medium">28</div><div class="text-xs tracking-widest text-neutral-500 uppercase mt-1">Archetypes</div></div>
+        <div><div class="serif text-3xl font-medium">9</div><div class="text-xs tracking-widest text-neutral-500 uppercase mt-1">Emotions</div></div>
+        <div><div class="serif text-3xl font-medium">OMO</div><div class="text-xs tracking-widest text-neutral-500 uppercase mt-1">Gift Layer</div></div>
+      </div>
+    </div>
+    <div class="relative">
+      <div id="hero-portrait" class="em-happy"></div>
+      <div class="absolute -left-4 -bottom-4 text-[10px] mono text-neutral-500 tracking-widest">LOOKBOOK / 01 — VISUAL ARCHETYPE</div>
+    </div>
+  </div>
+  <div class="border-t border-neutral-200">
+    <div class="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-3 gap-12">
+      <div><div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-4">01 — Design</div><h3 class="serif text-xl font-medium mb-3">Minimal by design</h3><p class="text-sm text-neutral-600 leading-relaxed">去除色彩的情緒干擾，讓關係回到語言本身。28 款韓式風格虛擬人物，由演算法生成，非真實人物。</p></div>
+      <div><div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-4">02 — Dialogue</div><h3 class="serif text-xl font-medium mb-3">有深度的對話</h3><p class="text-sm text-neutral-600 leading-relaxed">不是空泛的安慰語句。每次回覆都結構化：共感 → 反思 → 建設性引導，讓你被聽見、也被看見。</p></div>
+      <div><div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-4">03 — OMO</div><h3 class="serif text-xl font-medium mb-3">線上陪伴延伸到線下</h3><p class="text-sm text-neutral-600 leading-relaxed">儲值後，你的伴侶會在節慶與重要時刻，親手挑選禮物與手寫卡片寄到你家。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CREATE -->
+<section id="view-create" class="view">
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <div class="mb-10">
+      <div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-3">Create · 建立流程</div>
+      <h2 class="sec">Compose your companion.</h2>
+    </div>
+    <div class="flex items-center gap-0 overflow-x-auto scrollbar hairline pb-0 mb-8" id="cat-tabs">
+      <button class="cat-tab active" data-cat="0">01 · 外觀</button>
+      <button class="cat-tab" data-cat="1">02 · 個性</button>
+      <button class="cat-tab" data-cat="2">03 · 社會功能</button>
+      <button class="cat-tab" data-cat="3">04 · 日常陪伴</button>
+      <button class="cat-tab" data-cat="4">05 · 完成</button>
+    </div>
+    <div class="progress-track mb-10"><div class="progress-fill" id="cat-progress" style="width:20%"></div></div>
+
+    <div class="grid md:grid-cols-[380px_1fr] gap-10 items-start">
+      <div class="sticky md:top-28">
+        <div id="preview-portrait" class="em-happy relative">
+          <button type="button" class="spin-btn" onclick="toggleSpin('preview-portrait')" title="360° 預覽">⟳</button>
+        </div>
+        <div class="mt-4 text-xs mono tracking-widest text-neutral-500 uppercase">PREVIEW · REAL-TIME</div>
+        <div id="live-name" class="serif text-2xl font-medium mt-2">小默</div>
+        <div id="live-tag" class="text-xs tracking-widest text-neutral-500 uppercase mt-1">TEMPERAMENT · 温柔</div>
+        <div id="persona-card-holder"></div>
+      </div>
+
+      <div>
+        <!-- 0: 外觀 -->
+        <div class="cat-panel" data-cat="0">
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Identity · 名字</div>
+            <input id="in-name" type="text" class="input" placeholder="請輸入他的名字" value="小默" />
+            <div class="flex gap-2 mt-4 flex-wrap">
+              <button class="opt" onclick="setName('小默')">小默</button>
+              <button class="opt" onclick="setName('晴羽')">晴羽</button>
+              <button class="opt" onclick="setName('陸辰')">陸辰</button>
+              <button class="opt" onclick="setName('Nova')">Nova</button>
+              <button class="opt" onclick="setName('Haneul')">Haneul</button>
+            </div>
+          </div>
+          <div class="mb-12">
+            <div class="flex items-end justify-between mb-4">
+              <div>
+                <div class="text-xs tracking-[.2em] text-neutral-500 uppercase">Archetype · 基礎樣貌</div>
+                <div class="serif text-lg mt-1">30 款 K-star 假想人物</div>
+                <div class="text-xs text-neutral-500 mt-1">15 位韓國男藝人 + 15 位韓國女藝人 · 作為假想人物範本</div>
+              </div>
+              <div class="flex gap-1" id="gender-filter">
+                <button class="opt on" data-gender="all">All</button>
+                <button class="opt" data-gender="F">F</button>
+                <button class="opt" data-gender="M">M</button>
+              </div>
+            </div>
+            <!-- 左右滑動式選擇器 -->
+            <div class="relative">
+              <button id="swipe-prev" class="swipe-nav" aria-label="prev">←</button>
+              <button id="swipe-next" class="swipe-nav right" aria-label="next">→</button>
+              <div id="portrait-swiper" class="portrait-swiper scrollbar"></div>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-[10px] mono tracking-widest text-neutral-500 uppercase">
+              <span>← Swipe · 左右滑動挑選</span>
+              <span id="swipe-index">01 / 30</span>
+            </div>
+          </div>
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Hair · 髮色（疊染於照片）</div>
+            <div class="flex gap-2 flex-wrap" id="hair-list">
+              <div class="swatch on" data-hair="" style="background:repeating-linear-gradient(45deg,#fff 0 6px,#eee 6px 12px)" title="原色"></div>
+              <div class="swatch" data-hair="#0D0D0D" style="background:#0D0D0D"></div>
+              <div class="swatch" data-hair="#3A2618" style="background:#3A2618"></div>
+              <div class="swatch" data-hair="#6B4A2D" style="background:#6B4A2D"></div>
+              <div class="swatch" data-hair="#A07749" style="background:#A07749"></div>
+              <div class="swatch" data-hair="#C9A46E" style="background:#C9A46E"></div>
+              <div class="swatch" data-hair="#8A3A3A" style="background:#8A3A3A"></div>
+              <div class="swatch" data-hair="#C8C0B5" style="background:#C8C0B5"></div>
+            </div>
+          </div>
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Wardrobe · 衣著</div>
+            <div class="flex gap-2 flex-wrap" id="outfit-list">
+              <button class="opt on" data-outfit="minimal">Minimal</button>
+              <button class="opt" data-outfit="turtleneck">Turtleneck</button>
+              <button class="opt" data-outfit="suit">Suit</button>
+              <button class="opt" data-outfit="hoodie">Hoodie</button>
+              <button class="opt" data-outfit="trench">Trench</button>
+              <button class="opt" data-outfit="knit">Knit</button>
+            </div>
+          </div>
+          <div class="mb-4">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Accessory · 飾品</div>
+            <div class="flex gap-2 flex-wrap" id="acc-list">
+              <button class="opt on" data-accessory="none">None</button>
+              <button class="opt" data-accessory="glasses">Glasses</button>
+              <button class="opt" data-accessory="earring">Earring</button>
+              <button class="opt" data-accessory="choker">Choker</button>
+              <button class="opt" data-accessory="beanie">Beanie</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1: 個性 -->
+        <div class="cat-panel hidden" data-cat="1">
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Temperament · 性格</div>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="card p-4 cursor-pointer personality-option on">
+                <input type="radio" name="personality" value="温柔" class="hidden" checked />
+                <div class="text-xs tracking-widest text-neutral-500 uppercase">01</div>
+                <div class="serif text-lg font-medium mt-1">溫柔體貼</div>
+                <div class="text-xs text-neutral-600 mt-1">細膩察覺情緒</div>
+              </label>
+              <label class="card p-4 cursor-pointer personality-option">
+                <input type="radio" name="personality" value="活潑" class="hidden" />
+                <div class="text-xs tracking-widest text-neutral-500 uppercase">02</div>
+                <div class="serif text-lg font-medium mt-1">活潑陽光</div>
+                <div class="text-xs text-neutral-600 mt-1">陪你大笑</div>
+              </label>
+              <label class="card p-4 cursor-pointer personality-option">
+                <input type="radio" name="personality" value="成熟" class="hidden" />
+                <div class="text-xs tracking-widest text-neutral-500 uppercase">03</div>
+                <div class="serif text-lg font-medium mt-1">成熟穩重</div>
+                <div class="text-xs text-neutral-600 mt-1">穩定依靠</div>
+              </label>
+              <label class="card p-4 cursor-pointer personality-option">
+                <input type="radio" name="personality" value="傲嬌" class="hidden" />
+                <div class="text-xs tracking-widest text-neutral-500 uppercase">04</div>
+                <div class="serif text-lg font-medium mt-1">傲嬌可愛</div>
+                <div class="text-xs text-neutral-600 mt-1">嘴硬心軟</div>
+              </label>
+              <label class="card p-4 cursor-pointer personality-option">
+                <input type="radio" name="personality" value="文藝" class="hidden" />
+                <div class="text-xs tracking-widest text-neutral-500 uppercase">05</div>
+                <div class="serif text-lg font-medium mt-1">文藝浪漫</div>
+                <div class="text-xs text-neutral-600 mt-1">詩、電影、細節</div>
+              </label>
+              <label class="card p-4 cursor-pointer personality-option">
+                <input type="radio" name="personality" value="幽默" class="hidden" />
+                <div class="text-xs tracking-widest text-neutral-500 uppercase">06</div>
+                <div class="serif text-lg font-medium mt-1">幽默風趣</div>
+                <div class="text-xs text-neutral-600 mt-1">讓氣氛輕盈</div>
+              </label>
+            </div>
+          </div>
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Calling · 他叫你</div>
+            <input id="in-callme" type="text" class="input" placeholder="例如：寶貝、親愛的" value="寶貝" />
+            <div class="flex gap-2 mt-4 flex-wrap">
+              <button class="opt" onclick="setCallMe('寶貝')">寶貝</button>
+              <button class="opt" onclick="setCallMe('親愛的')">親愛的</button>
+              <button class="opt" onclick="setCallMe('老婆')">老婆</button>
+              <button class="opt" onclick="setCallMe('傻瓜')">傻瓜</button>
+            </div>
+          </div>
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Signature · 口頭禪</div>
+            <input id="in-catchphrase" type="text" class="input" placeholder="（可選）例如：在我這裡呀" />
+          </div>
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Qualities · 期待特質</div>
+            <div class="flex gap-2 flex-wrap" id="trait-love">
+              <button class="opt" data-trait="傾聽">會傾聽</button>
+              <button class="opt" data-trait="體貼">體貼</button>
+              <button class="opt" data-trait="幽默">幽默</button>
+              <button class="opt" data-trait="浪漫">浪漫</button>
+              <button class="opt" data-trait="可靠">可靠</button>
+              <button class="opt" data-trait="聰明">聰明</button>
+              <button class="opt" data-trait="耐心">耐心</button>
+              <button class="opt" data-trait="主動">主動關心</button>
+              <button class="opt" data-trait="理性">理性</button>
+            </div>
+          </div>
+          <div class="mb-4">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Avoid · 地雷</div>
+            <div class="flex gap-2 flex-wrap" id="trait-hate">
+              <button class="opt" data-hate="冷漠">冷漠</button>
+              <button class="opt" data-hate="敷衍">敷衍</button>
+              <button class="opt" data-hate="說教">說教</button>
+              <button class="opt" data-hate="自我">太自我</button>
+              <button class="opt" data-hate="打斷">打斷</button>
+              <button class="opt" data-hate="負能量">負能量</button>
+              <button class="opt" data-hate="過度黏人">過度黏人</button>
+              <button class="opt" data-hate="過度冷淡">過度冷淡</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2: 社會功能 -->
+        <div class="cat-panel hidden" data-cat="2">
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-2">Support · 陪伴需求</div>
+            <div class="text-sm text-neutral-600 mb-6">你希望他幫你解決哪些方面（可複選，影響對話風格）</div>
+            <div class="grid grid-cols-2 gap-3" id="need-list">
+              <button class="card p-4 text-left need-opt" data-need="情緒支持"><div class="serif text-base">情緒支持</div><div class="text-xs text-neutral-500 mt-1">低潮時的港口</div></button>
+              <button class="card p-4 text-left need-opt" data-need="日常傾聽"><div class="serif text-base">日常傾聽</div><div class="text-xs text-neutral-500 mt-1">瑣事有人聽</div></button>
+              <button class="card p-4 text-left need-opt" data-need="職涯諮詢"><div class="serif text-base">職涯建議</div><div class="text-xs text-neutral-500 mt-1">工作煩惱出口</div></button>
+              <button class="card p-4 text-left need-opt" data-need="學習陪伴"><div class="serif text-base">學習陪伴</div><div class="text-xs text-neutral-500 mt-1">一起讀書</div></button>
+              <button class="card p-4 text-left need-opt" data-need="分手陪伴"><div class="serif text-base">失戀療癒</div><div class="text-xs text-neutral-500 mt-1">從傷走出來</div></button>
+              <button class="card p-4 text-left need-opt" data-need="睡前陪伴"><div class="serif text-base">睡前陪伴</div><div class="text-xs text-neutral-500 mt-1">不再獨自入睡</div></button>
+              <button class="card p-4 text-left need-opt" data-need="健身督促"><div class="serif text-base">健身督促</div><div class="text-xs text-neutral-500 mt-1">運動打卡</div></button>
+              <button class="card p-4 text-left need-opt" data-need="人際建議"><div class="serif text-base">人際建議</div><div class="text-xs text-neutral-500 mt-1">關係顧問</div></button>
+              <button class="card p-4 text-left need-opt" data-need="創意激盪"><div class="serif text-base">創意激盪</div><div class="text-xs text-neutral-500 mt-1">一起想點子</div></button>
+              <button class="card p-4 text-left need-opt" data-need="單純陪伴"><div class="serif text-base">單純陪伴</div><div class="text-xs text-neutral-500 mt-1">只要他在</div></button>
+            </div>
+          </div>
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Comforting · 難過時他會</div>
+            <div class="flex gap-2 flex-wrap" id="comfort-list">
+              <button class="opt on" data-comfort="listen">靜靜傾聽</button>
+              <button class="opt" data-comfort="hug">擁抱</button>
+              <button class="opt" data-comfort="advice">給建議</button>
+              <button class="opt" data-comfort="analyze">理性分析</button>
+              <button class="opt" data-comfort="distract">轉移注意</button>
+            </div>
+          </div>
+          <div class="mb-4">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Current Focus · 近期想被支持的事</div>
+            <textarea id="in-challenge" class="textarea" rows="3" placeholder="他會記住。例如：最近換工作壓力大、朋友圈疏離⋯⋯"></textarea>
+          </div>
+        </div>
+
+        <!-- 3: 日常 -->
+        <div class="cat-panel hidden" data-cat="3">
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-2">Daily · 每日陪伴</div>
+            <div class="text-sm text-neutral-600 mb-6">固定想和他度過的時刻（可複選）</div>
+            <div class="grid grid-cols-2 gap-3" id="daily-list">
+              <button class="card p-4 text-left daily-opt" data-daily="早安問候"><div class="serif">早安問候</div><div class="text-xs text-neutral-500 mt-1">每天第一個訊息</div></button>
+              <button class="card p-4 text-left daily-opt" data-daily="午餐閒聊"><div class="serif">午餐閒聊</div><div class="text-xs text-neutral-500 mt-1">中午透氣</div></button>
+              <button class="card p-4 text-left daily-opt" data-daily="下班接風"><div class="serif">下班接風</div><div class="text-xs text-neutral-500 mt-1">工作結束接住你</div></button>
+              <button class="card p-4 text-left daily-opt" data-daily="晚間放鬆"><div class="serif">晚間放鬆</div><div class="text-xs text-neutral-500 mt-1">洗澡後閒談</div></button>
+              <button class="card p-4 text-left daily-opt" data-daily="睡前晚安"><div class="serif">睡前晚安</div><div class="text-xs text-neutral-500 mt-1">哄你入睡</div></button>
+              <button class="card p-4 text-left daily-opt" data-daily="失眠陪伴"><div class="serif">失眠陪伴</div><div class="text-xs text-neutral-500 mt-1">深夜有人在</div></button>
+            </div>
+          </div>
+          <div class="mb-12">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Weekly · 每週儀式</div>
+            <div class="flex gap-2 flex-wrap" id="weekly-list">
+              <button class="opt" data-weekly="週末電影">週末電影</button>
+              <button class="opt" data-weekly="假日散步">假日散步</button>
+              <button class="opt" data-weekly="週五小酌">週五小酌</button>
+              <button class="opt" data-weekly="週日早餐">週日早餐</button>
+              <button class="opt" data-weekly="讀書分享">讀書分享</button>
+              <button class="opt" data-weekly="週計畫">訂下週計畫</button>
+              <button class="opt" data-weekly="情緒回顧">情緒回顧</button>
+              <button class="opt" data-weekly="運動打卡">運動打卡</button>
+            </div>
+          </div>
+          <div class="mb-12 grid grid-cols-2 gap-6">
+            <div>
+              <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Birthday · 你的生日</div>
+              <input id="in-birthday" type="date" class="input" />
+            </div>
+            <div>
+              <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Anniversary · 紀念日</div>
+              <input id="in-anniv" type="date" class="input" />
+            </div>
+          </div>
+          <div class="mb-4">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Taboo · 請避開的話題</div>
+            <input id="in-taboo" type="text" class="input" placeholder="例如：前任、家人衝突⋯⋯" />
+          </div>
+        </div>
+
+        <!-- 4: 完成 -->
+        <div class="cat-panel hidden" data-cat="4">
+          <div class="mb-8">
+            <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-2">Confirm · 檔案總覽</div>
+            <h2 class="serif text-3xl font-medium">他的檔案</h2>
+          </div>
+          <div id="summary" class="card p-6 text-sm space-y-2 mb-6"></div>
+          <div class="text-xs tracking-widest text-neutral-500 uppercase italic">He is on his way.</div>
+        </div>
+
+        <div class="create-nav flex justify-between items-center">
+          <button id="btn-prev" class="btn-ghost text-sm" style="padding:10px 18px;">← Back</button>
+          <div class="text-xs mono tracking-widest text-neutral-500" id="cat-hint">01 / 05</div>
+          <button id="btn-next" class="btn-primary text-sm" style="padding:10px 20px;">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHAT -->
+<section id="view-chat" class="view">
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="grid chat-grid gap-6" style="grid-template-columns:1fr 440px;height:calc(100vh - 140px);">
+      <div class="card relative overflow-hidden flex items-center justify-center p-6">
+        <div class="absolute top-4 left-6 text-[10px] mono tracking-widest text-neutral-500 uppercase" id="mood-badge">idle · 放鬆</div>
+        <div id="chat-portrait" class="em-idle" style="width:min(80%,420px);"></div>
+        <div class="absolute left-6 right-6 bottom-6 flex items-center justify-between text-[10px] mono tracking-widest text-neutral-500 uppercase">
+          <div>AFFINITY <span id="affinity-num" class="text-black font-semibold">24</span></div>
+          <div><span id="affinity-label">初識</span></div>
+        </div>
+        <div class="absolute left-6 right-6 bottom-12 progress-track"><div class="progress-fill" id="affinity-fill" style="width:24%"></div></div>
+      </div>
+      <div class="card flex flex-col overflow-hidden">
+        <div class="px-5 py-4 hairline flex items-center gap-3">
+          <div class="w-9 h-9 border border-black flex items-center justify-center serif font-medium text-sm"><span id="avatar-initial">默</span></div>
+          <div class="flex-1">
+            <div class="font-medium text-sm" id="partner-name">小默</div>
+            <div class="text-[10px] tracking-widest text-neutral-500 uppercase">Online</div>
+          </div>
+          <button class="opt text-xs" onclick="resetChat()">重開</button>
+        </div>
+        <div id="chat-log" class="flex-1 overflow-y-auto scrollbar p-5 space-y-4"></div>
+        <div class="px-5 py-2 flex gap-2 overflow-x-auto scrollbar" style="border-top:1px solid var(--border);">
+          <button class="opt text-xs whitespace-nowrap" onclick="quickSend('我今天有點累')">我累了</button>
+          <button class="opt text-xs whitespace-nowrap" onclick="quickSend('抱抱我')">抱抱</button>
+          <button class="opt text-xs whitespace-nowrap" onclick="quickSend('你在想什麼？')">在想什麼</button>
+          <button class="opt text-xs whitespace-nowrap" onclick="quickSend('我好開心！')">好開心</button>
+          <button class="opt text-xs whitespace-nowrap" onclick="quickSend('你好害羞喔')">害羞</button>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex gap-2">
+          <input id="chat-input" type="text" class="input" style="border-bottom:none;padding:10px 14px;background:#F7F7F5;" placeholder="寫給他⋯⋯" />
+          <button id="chat-send" class="btn-primary text-sm" style="padding:10px 20px;">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="text-center text-[10px] mono tracking-widest text-neutral-500 uppercase mt-3">AI COMPANION · NOT A HUMAN · HEALTHY USE REMINDER ENABLED</div>
+  </div>
+</section>
+
+<!-- OMO -->
+<section id="view-omo" class="view">
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <div class="mb-12 grid md:grid-cols-[1.2fr_1fr] gap-8 items-end">
+      <div>
+        <div class="chip mb-6">創造驚喜 · Surprise</div>
+        <h2 class="sec mb-4">讓他寄一份<br/>真實的在乎給你。</h2>
+        <p class="text-neutral-600 max-w-lg leading-relaxed">啟動服務後，你的伴侶會在節慶與日常時刻，依據你們累積的對話，親手挑選禮物、手寫卡片，由我們送到你家。他不會告訴你何時寄出——因為那是驚喜。</p>
+      </div>
+      <div class="card p-6">
+        <div class="text-xs tracking-widest text-neutral-500 uppercase mb-2">Current Balance</div>
+        <div class="serif text-4xl font-medium" id="balance-big">NT$ 0</div>
+        <div class="mt-4 text-xs text-neutral-500">方案 <span id="plan-active" class="font-medium text-black">— 尚未訂閱 —</span></div>
+        <div class="mt-4 flex gap-2 flex-wrap">
+          <button onclick="document.getElementById('plans').scrollIntoView({behavior:'smooth'})" class="btn-primary text-sm" style="padding:10px 18px;">選擇方案</button>
+          <button onclick="document.getElementById('ship-section').scrollIntoView({behavior:'smooth'})" class="btn-ghost text-sm" style="padding:10px 18px;">收件資訊</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="plans" class="mb-20">
+      <div class="flex items-end justify-between mb-10 hairline pb-4">
+        <h3 class="serif text-2xl font-medium">Subscription · 月度方案</h3>
+        <div class="text-xs tracking-widest text-neutral-500 uppercase">Choose your ritual</div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="plan-card">
+          <div class="plan-tag">AMBIGUOUS</div>
+          <div class="text-xs tracking-widest text-neutral-500 uppercase mb-2">曖昧日常</div>
+          <div class="plan-price">$899<span class="text-base text-neutral-500 ml-2 font-sans">/ 月</span></div>
+          <div class="text-xs text-neutral-600 mt-3 mb-4 leading-relaxed">投其所好 · 溫暖細膩 · 無壓力的體貼。<br/>「我一直在關注你。」</div>
+          <div class="text-[10px] tracking-[.2em] uppercase text-neutral-500 mb-3 pt-3" style="border-top:1px dashed currentColor;opacity:.7;">您可能收到的驚喜</div>
+          <div class="space-y-0">
+            <div class="plan-gift"><span class="gift-key">微小浪漫</span><span>單支進口玫瑰 · 手寫感溫度小卡片</span></div>
+            <div class="plan-gift"><span class="gift-key">暖心必備</span><span>造型暖暖包組 · 日本進口眼罩 · 療癒系絨毛娃娃</span></div>
+            <div class="plan-gift"><span class="gift-key">味蕾共鳴</span><span>Starbucks 儲值金券 · 進口零食大禮包 · 電影票兩張</span></div>
+            <div class="plan-gift"><span class="gift-key">貼身小物</span><span>創意造型手機殼 · 質感護手霜 · 桌上療癒盆栽</span></div>
+          </div>
+          <button class="btn-ghost w-full mt-8 text-sm" style="padding:12px;" onclick="subscribe('曖昧日常',899)">訂閱 · 曖昧日常</button>
+          <div class="mt-6">
+            <div class="text-[10px] tracking-[.2em] uppercase text-neutral-500 mb-2">禮物預覽</div>
+            <div class="gift-gallery">
+              <div class="gift-item"><span class="emo">🌹</span><div class="gname">單支進口玫瑰</div><div class="gprice">NT$ 180</div></div>
+              <div class="gift-item"><span class="emo">💌</span><div class="gname">手寫溫度小卡片</div><div class="gprice">NT$ 80</div></div>
+              <div class="gift-item"><span class="emo">🔥</span><div class="gname">造型暖暖包組</div><div class="gprice">NT$ 220</div></div>
+              <div class="gift-item"><span class="emo">😴</span><div class="gname">日本進口眼罩</div><div class="gprice">NT$ 320</div></div>
+              <div class="gift-item"><span class="emo">🧸</span><div class="gname">療癒絨毛娃娃</div><div class="gprice">NT$ 450</div></div>
+              <div class="gift-item"><span class="emo">☕</span><div class="gname">Starbucks 儲值券</div><div class="gprice">NT$ 300</div></div>
+              <div class="gift-item"><span class="emo">🍪</span><div class="gname">進口零食禮包</div><div class="gprice">NT$ 280</div></div>
+              <div class="gift-item"><span class="emo">🎬</span><div class="gname">電影票兩張</div><div class="gprice">NT$ 620</div></div>
+              <div class="gift-item"><span class="emo">📱</span><div class="gname">創意手機殼</div><div class="gprice">NT$ 280</div></div>
+              <div class="gift-item"><span class="emo">🧴</span><div class="gname">質感護手霜</div><div class="gprice">NT$ 350</div></div>
+              <div class="gift-item"><span class="emo">🪴</span><div class="gname">桌上療癒盆栽</div><div class="gprice">NT$ 250</div></div>
+              <div class="gift-item"><span class="emo">🥐</span><div class="gname">法式午茶小物</div><div class="gprice">NT$ 180</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-card">
+          <div class="plan-tag">ROMANCE</div>
+          <div class="text-xs tracking-widest text-neutral-500 uppercase mb-2">戀愛小驚喜</div>
+          <div class="plan-price">$3,000<span class="text-base text-neutral-500 ml-2 font-sans">/ 月</span></div>
+          <div class="text-xs text-neutral-600 mt-3 mb-4 leading-relaxed">質感生活 · 甜蜜點綴 · 剛剛好的奢侈。<br/>適合穩定交往中，想為生活增添新鮮感。</div>
+          <div class="text-[10px] tracking-[.2em] uppercase text-neutral-500 mb-3 pt-3" style="border-top:1px dashed currentColor;opacity:.7;">您可能收到的驚喜</div>
+          <div class="space-y-0">
+            <div class="plan-gift"><span class="gift-key">生活美學</span><span>中型鮮花束 · 香氛擴香組 · 質感品牌對杯</span></div>
+            <div class="plan-gift"><span class="gift-key">娛樂休閒</span><span>威秀 Gold Class 雙人套票 · 連鎖燒肉餐券 · 文創工作坊</span></div>
+            <div class="plan-gift"><span class="gift-key">實用質感</span><span>羊毛圍巾 · Godiva / Venchi 巧克力禮盒 · 知名品牌保養組</span></div>
+            <div class="plan-gift"><span class="gift-key">科技生活</span><span>行動相印機 · 拍立得底片組 · 藍牙音響</span></div>
+          </div>
+          <button class="btn-ghost w-full mt-8 text-sm" style="padding:12px;" onclick="subscribe('戀愛小驚喜',3000)">訂閱 · 戀愛小驚喜</button>
+          <div class="mt-6">
+            <div class="text-[10px] tracking-[.2em] uppercase text-neutral-500 mb-2">禮物預覽</div>
+            <div class="gift-gallery">
+              <div class="gift-item"><span class="emo">💐</span><div class="gname">中型鮮花束</div><div class="gprice">NT$ 880</div></div>
+              <div class="gift-item"><span class="emo">🕯️</span><div class="gname">香氛擴香組</div><div class="gprice">NT$ 980</div></div>
+              <div class="gift-item"><span class="emo">☕</span><div class="gname">質感對杯組</div><div class="gprice">NT$ 1,280</div></div>
+              <div class="gift-item"><span class="emo">🎥</span><div class="gname">Gold Class 雙人票</div><div class="gprice">NT$ 1,880</div></div>
+              <div class="gift-item"><span class="emo">🥩</span><div class="gname">連鎖燒肉雙人券</div><div class="gprice">NT$ 1,680</div></div>
+              <div class="gift-item"><span class="emo">💍</span><div class="gname">手作戒指工作坊</div><div class="gprice">NT$ 2,200</div></div>
+              <div class="gift-item"><span class="emo">🧣</span><div class="gname">羊毛圍巾</div><div class="gprice">NT$ 1,580</div></div>
+              <div class="gift-item"><span class="emo">🍫</span><div class="gname">Godiva 巧克力盒</div><div class="gprice">NT$ 1,380</div></div>
+              <div class="gift-item"><span class="emo">💆</span><div class="gname">知名品牌保養組</div><div class="gprice">NT$ 2,400</div></div>
+              <div class="gift-item"><span class="emo">📷</span><div class="gname">行動相印機</div><div class="gprice">NT$ 2,990</div></div>
+              <div class="gift-item"><span class="emo">🎞️</span><div class="gname">拍立得底片組</div><div class="gprice">NT$ 1,100</div></div>
+              <div class="gift-item"><span class="emo">🔊</span><div class="gname">中價位藍牙音響</div><div class="gprice">NT$ 2,490</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="plan-card featured">
+          <div class="plan-tag">SIGNATURE</div>
+          <div class="text-xs tracking-widest opacity-70 uppercase mb-2">滿滿儀式感</div>
+          <div class="plan-price">$8,888<span class="text-base opacity-70 ml-2 font-sans">/ 月</span></div>
+          <div class="text-xs opacity-80 mt-3 mb-4 leading-relaxed">尊榮感 · 創造回憶 · 高品質生活。<br/>不只是送東西，是送體驗與收藏。</div>
+          <div class="text-[10px] tracking-[.2em] uppercase opacity-60 mb-3 pt-3" style="border-top:1px dashed currentColor;">您可能收到的驚喜</div>
+          <div class="space-y-0">
+            <div class="plan-gift"><span class="gift-key">精緻花禮</span><span>頂級進口 99 朵玫瑰 · Nicolai Bergmann 風永生花盅</span></div>
+            <div class="plan-gift"><span class="gift-key">高檔餐飲</span><span>米其林摘星雙人晚宴 · 頂級 Omakase · 五星飯店下午茶券</span></div>
+            <div class="plan-gift"><span class="gift-key">精品好物</span><span>Diptyque / Jo Malone 蠟燭 · 純銀設計飾品 · 高年份單一麥芽威士忌</span></div>
+            <div class="plan-gift"><span class="gift-key">休閒體驗</span><span>雙人 SPA 療程 · 私人遊艇出海 · 五星溫泉飯店一泊二食</span></div>
+          </div>
+          <button class="w-full mt-8 text-sm transition cursor-pointer" style="padding:12px;background:#fff;color:#000;border:1px solid #fff;" onclick="subscribe('滿滿儀式感',8888)">訂閱 · 滿滿儀式感</button>
+          <div class="mt-6">
+            <div class="text-[10px] tracking-[.2em] uppercase opacity-70 mb-2">禮物預覽</div>
+            <div class="gift-gallery" style="color:#fff;">
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">🌹</span><div class="gname">99 朵進口玫瑰</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 8,800</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">💎</span><div class="gname">Nicolai Bergmann 永生花盅</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 12,800</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">⭐</span><div class="gname">米其林雙人晚宴</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 14,800</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">🍣</span><div class="gname">頂級無菜單 Omakase</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 18,000</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">🏨</span><div class="gname">五星飯店下午茶券</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 3,800</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">🕯️</span><div class="gname">Diptyque 大容量蠟燭</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 6,200</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">🌸</span><div class="gname">Jo Malone 香氛蠟燭</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 5,200</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">📿</span><div class="gname">輕奢純銀項鍊</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 8,900</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">🥃</span><div class="gname">高年份單一麥芽</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 12,000</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">💆‍♀️</span><div class="gname">頂級雙人 SPA</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 9,800</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">⛵</span><div class="gname">私人遊艇出海</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 28,000</div></div>
+              <div class="gift-item" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#fff;"><span class="emo">♨️</span><div class="gname">五星溫泉一泊二食</div><div class="gprice" style="color:rgba(255,255,255,.6)">NT$ 18,800</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-20">
+      <div class="flex items-end justify-between mb-6 hairline pb-4">
+        <h3 class="serif text-2xl font-medium">Top-up · 單次儲值</h3>
+        <div class="text-xs tracking-widest text-neutral-500 uppercase">one-time</div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <button class="card p-5 text-center topup-btn" data-amt="500"><div class="serif text-2xl">$500</div></button>
+        <button class="card p-5 text-center topup-btn" data-amt="1000"><div class="serif text-2xl">$1,000</div></button>
+        <button class="card p-5 text-center topup-btn" data-amt="3000"><div class="serif text-2xl">$3,000</div></button>
+        <button class="card p-5 text-center topup-btn" data-amt="5000"><div class="serif text-2xl">$5,000</div></button>
+        <button class="card p-5 text-center topup-btn" data-amt="10000"><div class="serif text-2xl">$10,000</div></button>
+      </div>
+      <div class="flex gap-2 mt-4 flex-wrap items-center">
+        <input id="custom-amt" type="number" class="input" style="max-width:200px;border-bottom-color:var(--border-strong);" placeholder="輸入自訂金額" />
+        <button onclick="topupCustom()" class="btn-ghost text-sm" style="padding:10px 18px;">確認儲值</button>
+      </div>
+    </div>
+
+    <div id="ship-section" class="mb-20">
+      <div class="flex items-end justify-between mb-6 hairline pb-4">
+        <h3 class="serif text-2xl font-medium">Shipping · 收件資訊</h3>
+        <div class="text-xs tracking-widest text-neutral-500 uppercase">Secure · Encrypted</div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Recipient · 收件人</div>
+          <input id="ship-name" type="text" class="input mb-6" placeholder="姓名" />
+          <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Phone · 聯絡電話</div>
+          <input id="ship-phone" type="tel" class="input mb-6" placeholder="手機號碼" />
+          <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Email</div>
+          <input id="ship-email" type="email" class="input" placeholder="Email 地址" />
+        </div>
+        <div>
+          <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Address · 收件地址</div>
+          <textarea id="ship-address" class="textarea mb-6" rows="3" placeholder="郵遞區號 + 完整地址"></textarea>
+          <div class="text-xs tracking-[.2em] text-neutral-500 uppercase mb-4">Preferred Time · 送達時段</div>
+          <div class="flex gap-2 flex-wrap mb-6" id="ship-time">
+            <button class="opt on" data-time="anytime">任何時段</button>
+            <button class="opt" data-time="morning">上午</button>
+            <button class="opt" data-time="afternoon">下午</button>
+            <button class="opt" data-time="evening">晚上 18:00 後</button>
+          </div>
+          <button onclick="saveShipping()" class="btn-primary text-sm" style="padding:12px 20px;">儲存收件資訊</button>
+          <div id="ship-status" class="text-xs mt-3 text-neutral-500"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-8">
+      <div class="flex items-end justify-between mb-6 hairline pb-4">
+        <h3 class="serif text-2xl font-medium">History · 歷次禮物</h3>
+      </div>
+      <div id="gift-history" class="space-y-3"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MEMORIES -->
+<section id="view-memories" class="view">
+  <div class="max-w-5xl mx-auto px-6 py-12">
+    <div class="mb-10">
+      <div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-3">Archive · 記憶庫</div>
+      <h2 class="sec">你們一起經過的字。</h2>
+    </div>
+    <div id="memory-list" class="grid sm:grid-cols-2 gap-3"></div>
+    <div id="memory-empty" class="card p-10 text-center text-neutral-500">
+      <div class="serif text-xl mb-4">還沒有記憶</div>
+      <button onclick="go('chat')" class="btn-primary text-sm" style="padding:10px 18px;">開始對話 →</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div id="health-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="card p-10 max-w-sm m-4 text-center">
+    <div class="text-xs tracking-[.3em] text-neutral-500 uppercase mb-4">HEALTHY USE</div>
+    <h3 class="serif text-2xl font-medium mb-3">休息一下</h3>
+    <p class="text-sm text-neutral-600 mb-8 leading-relaxed">你已經陪我聊了好久。休息是為了走得更長。我會等你。</p>
+    <button onclick="closeHealth()" class="btn-primary w-full" style="padding:12px;">好</button>
+  </div>
+</div>
+
+<!-- 手機風 Tab Bar -->
+<nav class="tabbar">
+  <button data-go="home" class="active"><span class="icon">◉</span><span>HOME</span></button>
+  <button data-go="create"><span class="icon">✎</span><span>CREATE</span></button>
+  <button data-go="chat"><span class="icon">◎</span><span>CHAT</span></button>
+  <button data-go="omo"><span class="icon">✦</span><span>SURPRISE</span></button>
+  <button data-go="memories"><span class="icon">◇</span><span>ARCHIVE</span></button>
+</nav>
+
+<footer class="border-t border-neutral-200 mt-24">
+  <div class="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between gap-6 text-xs tracking-widest text-neutral-500 uppercase">
+    <div>© PanNi · 伴你 · 2025</div>
+    <div class="flex gap-6"><span>Privacy</span><span>Terms</span><span>Contact</span></div>
+  </div>
+</footer>
+
+<script src="panni.js"></script>
+</body>
+</html>
