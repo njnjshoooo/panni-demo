@@ -1107,12 +1107,10 @@ window.subscribe = function (name, amount) {
   alert(`已啟動「${name}」方案\n${fmt(amount)} 已儲入帳戶\n\n驚喜將由他親自安排，在你意想不到的時刻送達。`);
 };
 
-/* ---------- 啟動 ---------- */
+/* ---------- 啟動（延後渲染到 Phase 2 定義完成後） ---------- */
 updatePartnerUI();
 updateAffinity();
 renderBalance();
-renderPortrait(document.getElementById('hero-portrait'), store.partner);
-renderPortrait(document.getElementById('preview-portrait'), store.partner);
 document.querySelectorAll('[data-go="chat"]').forEach(b => b.addEventListener('click', () => {
   if (chatLog.children.length === 0) setTimeout(resetChat, 300);
 }));
@@ -1424,5 +1422,7 @@ document.querySelectorAll('.tabbar button').forEach(b => {
   if (chatCard) chatCard.dataset.sub = '對話中 · HEALTHY USE';
 })();
 
-/* --- J. 初始人設卡顯示 --- */
+/* --- J. 初始渲染：所有 const 都已定義，此時呼叫才安全 --- */
+renderPortrait(document.getElementById('hero-portrait'), store.partner);
+renderPortrait(document.getElementById('preview-portrait'), store.partner);
 setTimeout(renderPersonaCard, 200);
