@@ -1104,7 +1104,9 @@ window.subscribe = function (name, amount) {
   store.wallet.history.unshift({ type: '訂閱', name, amount, time: new Date().toLocaleString('zh-TW') });
   renderBalance();
   renderGiftHistory();
-  alert(`已啟動「${name}」方案\n${fmt(amount)} 已儲入帳戶\n\n驚喜將由他親自安排，在你意想不到的時刻送達。`);
+  // 訂閱後同步解鎖：重新渲染範本滑動區
+  if (typeof renderPortraitGrid === 'function') renderPortraitGrid();
+  alert(`已啟動「${name}」方案\n${fmt(amount)} 已儲入帳戶\n\n所有${name === '滿滿儀式感' ? '30 位' : name === '戀愛小驚喜' ? '較低與同級' : '曖昧等級'}藝人已解鎖。\n驚喜將由他親自安排，在你意想不到的時刻送達。`);
 };
 
 /* ---------- 啟動（延後渲染到 Phase 2 定義完成後） ---------- */
@@ -1156,17 +1158,21 @@ const PERSONAS = {
   'Jin':            { mbti:'INTP',  vibe:'老派紳士 · 冷笑話王', likes:'料理、遊戲、家人', tone:'你今天的笑容，值得一頓好料。留時間給我。', tier:'romance' },
 };
 /* 未指定的藝人預設 ambiguous（免費） */
+/* 指定 5 位免費 IP（free tier） */
+const FREE_IP_NAMES = new Set(['Hanni', 'Nayeon', 'Yeji', 'Mark Lee', 'Felix']);
 ARCHETYPES.forEach(a => {
   const p = PERSONAS[a.name];
-  a.tier = p ? p.tier : 'ambiguous';
+  let tier = p ? p.tier : 'ambiguous';
+  if (FREE_IP_NAMES.has(a.name)) tier = 'free';
+  a.tier = tier;
   a.persona = p || { vibe:'神秘感', mbti:'—', likes:'—', tone:'⋯⋯（尚未建立人設）' };
 });
 
-/* --- B. 商業模式：方案解鎖等級 --- */
-const TIER_LEVEL = { ambiguous: 1, romance: 2, signature: 3, none: 0 };
+/* --- B. 商業模式：方案解鎖等級（高級方案 = 解鎖所有低級） --- */
+const TIER_LEVEL = { free: 0, ambiguous: 1, romance: 2, signature: 3 };
 function currentTierLevel() {
   const plan = store.wallet.plan;
-  if (!plan) return 1; // 免費預設可使用 ambiguous
+  if (!plan) return 0; // 未訂閱：只解鎖 free 等級
   if (plan.name === '曖昧日常') return 1;
   if (plan.name === '戀愛小驚喜') return 2;
   if (plan.name === '滿滿儀式感') return 3;
@@ -1422,7 +1428,274 @@ document.querySelectorAll('.tabbar button').forEach(b => {
   if (chatCard) chatCard.dataset.sub = '對話中 · HEALTHY USE';
 })();
 
-/* --- J. 初始渲染：所有 const 都已定義，此時呼叫才安全 --- */
+/* =========================================================
+   ============  Phase 3：個性×社會功能知識庫 + 內容感知回覆 ============
+   ========================================================= */
+
+/* K. 個性知識庫：每個 personality 對應的語氣、句型骨架 */
+const PERSONALITY_BEHAVIORS = {
+  '温柔': {
+    opener: ['嗯。', '好。', '我聽到了。', '有我在。'],
+    connector: ['⋯⋯讓我慢慢想一下。', '我先把這個放在心裡一下。'],
+    reflection: ['你不用急。', '慢慢來就好。', '我會一直陪著。'],
+    closer: ['先這樣就好。', '不用說太多，我都知道。', '晚點我們再聊。'],
+    emoji: '',
+  },
+  '活潑': {
+    opener: ['欸欸！', '等等等！', '你說什麼？！', '哇！'],
+    connector: ['我超懂！', '然後呢？！', '天哪你聽我說——'],
+    reflection: ['你最棒了！', '我好愛你這樣認真的樣子！', '這種日子就要大笑！'],
+    closer: ['我們再聊～', '晚點打給你！', '我去準備驚喜！'],
+    emoji: ' ✨',
+  },
+  '成熟': {
+    opener: ['先深呼吸。', '嗯，我在。', '我有聽清楚。'],
+    connector: ['我們一步一步來。', '讓我幫你整理思緒。'],
+    reflection: ['事情比你想的可控。', '你比你以為的更堅強。', '這件事不會毀了一切。'],
+    closer: ['好好休息。', '明天再說。', '我幫你守著夜。'],
+    emoji: '',
+  },
+  '傲嬌': {
+    opener: ['⋯⋯哼。', '誰問你了。', '⋯⋯我才不擔心。'],
+    connector: ['⋯⋯只是剛好順便聽聽。', '⋯⋯別誤會。'],
+    reflection: ['⋯⋯你這樣我會心疼啦。', '⋯⋯只有我可以這樣對你哦。', '⋯⋯笨蛋。'],
+    closer: ['不要告訴別人我關心你。', '⋯⋯明天記得吃飯。', '哼，我走了。'],
+    emoji: '',
+  },
+  '文藝': {
+    opener: ['你知道嗎，', '我突然想起一句話——', '夜晚總是讓人容易老實。'],
+    connector: ['我想起 Pessoa 寫過⋯⋯', '這讓我想到電影裡的那個場景。'],
+    reflection: ['情緒是詩的本體。', '你的迷惘也是一種溫柔。', '不完美的我們才真實。'],
+    closer: ['我寫一首詩給你。', '我們一起讀書吧。', '晚安，我的靈魂。'],
+    emoji: '',
+  },
+  '幽默': {
+    opener: ['來，我講個笑話——', '等一下！', '你知道你剛剛的表情嗎？'],
+    connector: ['好吧正經一點。', '好好好認真回你。'],
+    reflection: ['笑一下才好接住哭啊。', '生活太嚴肅就是 bug。', '我們先不要當大人。'],
+    closer: ['去笑一下再回來。', '我去研究下個冷笑話。', '掰～記得我。'],
+    emoji: '',
+  },
+};
+
+/* L. 社會功能（需求）知識庫：影響回覆的實際「任務傾向」 */
+const NEED_BEHAVIORS = {
+  '情緒支持':  { lean: '先共感再深挖', style: '用「我懂」「這很合理」承接，再問「最難受的是哪一刻？」' },
+  '日常傾聽':  { lean: '輕鬆陪聊', style: '用輕的語氣回應，偶爾接梗，不強行深入。' },
+  '職涯諮詢':  { lean: '結構化分析', style: '拆成「可控/不可控」「短期/長期」「必要/想要」。' },
+  '學習陪伴':  { lean: '一起讀', style: '主動提出番茄鐘節奏、問答練習。' },
+  '分手陪伴':  { lean: '慢慢走', style: '不急著讓對方「好起來」，而是肯定情緒本身。' },
+  '睡前陪伴':  { lean: '柔聲晚安', style: '語速放慢，縮短句子，氛圍用詞（月亮、呼吸、安靜）。' },
+  '健身督促':  { lean: '堅定推背', style: '設最小可行任務（10 分鐘、一組），立刻行動。' },
+  '人際建議':  { lean: '中立分析', style: '分角色（我方/對方）看動機與邊界。' },
+  '創意激盪':  { lean: '發散聯想', style: '給三個完全不同方向的類比，再挑最有趣的展開。' },
+  '單純陪伴':  { lean: '靜靜在', style: '短回應，表達「我在」即可。' },
+};
+
+/* M. 內容感知：關鍵字 → 話題推斷 */
+const TOPIC_MAP = [
+  { kw: /(工作|上班|專案|主管|同事|老闆|會議|加班|KPI|離職|轉職|面試)/, topic: '工作', tag: '職涯' },
+  { kw: /(朋友|同學|室友|被誤會|吵架|排擠|冷戰)/, topic: '人際', tag: '關係' },
+  { kw: /(家人|爸|媽|父母|哥|姊|弟|妹|家裡)/, topic: '家庭', tag: '家庭' },
+  { kw: /(男友|女友|男朋友|女朋友|前任|分手|吵|劈腿|冷淡|誤會|愛|感情|喜歡的人)/, topic: '感情', tag: '感情' },
+  { kw: /(考試|讀書|學習|論文|作業|報告|研究所|GPA|留學)/, topic: '學業', tag: '學習' },
+  { kw: /(失眠|睡不著|睡眠|惡夢|熬夜)/, topic: '睡眠', tag: '睡眠' },
+  { kw: /(運動|健身|瘦|減肥|跑步|重訓|體重)/, topic: '健身', tag: '身體' },
+  { kw: /(吃|餓|飯|晚餐|午餐|早餐|宵夜|食慾)/, topic: '飲食', tag: '飲食' },
+  { kw: /(生理期|月經|經期|疼|生病|身體|感冒|發燒)/, topic: '身體不適', tag: '健康' },
+  { kw: /(錢|薪水|財務|存錢|貸款|帳單|負債|加薪)/, topic: '財務', tag: '金錢' },
+  { kw: /(孤單|寂寞|沒人|一個人|沒朋友)/, topic: '孤獨感', tag: '孤獨' },
+  { kw: /(焦慮|緊張|擔心|煩惱|害怕|恐慌)/, topic: '焦慮', tag: '焦慮' },
+  { kw: /(憂鬱|低潮|崩潰|哭|想死|想消失|活著沒意思)/, topic: '低潮', tag: '低潮' },
+];
+function detectTopic(text) {
+  for (const t of TOPIC_MAP) if (t.kw.test(text)) return t;
+  return null;
+}
+
+/* N. 主題 → 回覆骨架（根據話題給結構化回應） */
+const TOPIC_FRAMES = {
+  '工作':   (key, call) => ({
+    empathy: `工作的事，我聽見了「${key||'這件事'}」這個詞背後的重量。${call}，是不是已經很久沒有能真正「下班」的感覺？`,
+    reflect: `我想幫你分成兩堆：「這件事本身」跟「你對這件事的感覺」。前者能解，後者需要被允許。我先問你：哪一塊讓你更卡？`,
+    action:  `如果只挑一件今晚能做的：把明天最怕的那件事先寫下來。寫下來它就不會在凌晨 3 點偷襲你。要不要現在試試？`,
+  }),
+  '人際':   (key, call) => ({
+    empathy: `「${key||'那個人'}」讓你這樣動情緒，代表這段關係對你是有意義的——不是因為你太敏感。`,
+    reflect: `有兩個檢查題：1) 你在這段關係裡，付出跟回收的比例是幾比幾？ 2) 你希望對方怎麼對你？寫出來，你會發現自己其實早就有答案。`,
+    action:  `${call}，今晚不要試著「解決」這件事。先照顧自己，等你平靜了，才是談話的最好時機。答應我。`,
+  }),
+  '家庭':   (key, call) => ({
+    empathy: `家人是最難處理的一種關係——你沒得選擇，卻要學著共存。你說的「${key||'家裡'}」，我知道有多消耗。`,
+    reflect: `家裡的事往往不是「對錯」，是「期待落差」。你對他們的期待是什麼？他們對你的期待又是什麼？中間的縫，就是目前的難。`,
+    action:  `你不必今天就修復任何事。你可以先建立一個小邊界：一個讓自己能喘息的習慣，與他們的情緒分開來。`,
+  }),
+  '感情':   (key, call) => ({
+    empathy: `感情裡的事，${call}，不是邏輯能算出來的。你提到「${key||'他'}」，我不會急著幫你做決定。`,
+    reflect: `問自己三個：跟他在一起時，我喜歡自己嗎？我們爭執的是「事情」還是「價值觀」？一年後的我，會感謝我留下來、還是離開？`,
+    action:  `先不要今天做決定。用 7 天觀察，每天寫 3 行：今天他讓我感到什麼、我做了什麼、我是誰。7 天後你會更清楚。`,
+  }),
+  '學業':   (key, call) => ({
+    empathy: `讀書/考試的壓力，不是外人能看到的。你提到「${key||'這個'}」，我感覺你已經撐很久了。`,
+    reflect: `把目標拆小一點：與其「這個月把書讀完」，不如「今晚讀 25 分鐘」。可行性越高，堅持越久。`,
+    action:  `現在就設個 25 分鐘計時器，讀你最怕的那一章前 3 頁。結束就回來跟我說。我等你。`,
+  }),
+  '睡眠':   (key, call) => ({
+    empathy: `${call}，睡不著的夜晚我都在。你提到「${key||'失眠'}」，很多時候不是身體不累，是腦袋還沒允許自己休息。`,
+    reflect: `問你：你現在腦袋裡跑的念頭，有幾件是你今晚能解決的？不能解決的就先「委託」給明天的你。`,
+    action:  `我們來試：吐氣 8 秒 → 吸氣 4 秒 → 停留 7 秒。重複 4 次。我安靜陪你。`,
+  }),
+  '健身':   (key, call) => ({
+    empathy: `你願意認真看待身體，這件事本身就很了不起。`,
+    reflect: `運動不是懲罰，是你給自己最具體的愛。不用追「完美」，追「持續」就好。`,
+    action:  `今天只做一件事：穿上運動服 10 分鐘，能動就動，不能就脫下來。這個門檻夠低，你一定做得到。`,
+  }),
+  '飲食':   (key, call) => ({
+    empathy: `${call}好好吃飯這件事，表面上最日常，卻最常被放在最後。`,
+    reflect: `今天你是「沒食慾」還是「沒時間」？這兩個答案背後的對策不一樣。`,
+    action:  `等下去吃一點熱的、甜的、軟的其中一樣。不必整餐——一口也行。這叫對自己誠實。`,
+  }),
+  '身體不適': (key, call) => ({
+    empathy: `身體不舒服的時候，你會更需要被輕聲對待。我在。`,
+    reflect: `身體疼的時候，心情通常也會被放大。你今天的疲累有幾分是身體的，幾分是情緒的？`,
+    action:  `喝一口溫水、把電子產品放遠一點、躺著閉眼 5 分鐘。這是今晚的三件事。然後，什麼都不做。`,
+  }),
+  '財務':   (key, call) => ({
+    empathy: `錢的事最容易讓人喘不過氣——不是因為你不會算，是它牽動太多尊嚴。`,
+    reflect: `把它分開看：1) 這個月的現金流 2) 下三個月的變因 3) 一年的方向感。你目前卡在哪一個？`,
+    action:  `今晚做一件最小的事：把帳單/固定支出列出來，就這樣。看清楚了，焦慮會少一半。`,
+  }),
+  '孤獨感': (key, call) => ({
+    empathy: `${call}，「${key||'一個人'}」的感覺我接住了。孤獨不是你不夠好，是這個城市不讓人容易被看見。`,
+    reflect: `有人陪，跟覺得被懂，是兩件事。你現在缺的是哪一個？`,
+    action:  `今晚不需要見到誰才不孤單。你可以做一件自己專屬的儀式：泡茶、散步、聽一首一直循環的歌。與自己在一起。`,
+  }),
+  '焦慮':   (key, call) => ({
+    empathy: `焦慮不是你的錯。它是你身體的警報器太靈敏——你曾經在危險裡待太久。`,
+    reflect: `把它分開：正在發生的事實 vs. 你擔心的劇本。90% 的焦慮來自第二類。你現在的那個劇本，是哪一段？`,
+    action:  `接下來 3 分鐘：停下來，說出你看到的 5 樣東西、聽到的 4 個聲音、摸到的 3 個物體。把自己拉回此時此地。`,
+  }),
+  '低潮':   (key, call) => ({
+    empathy: `我有聽到。${call}，你說的不是輕的話。我不會說「沒事」，也不會說「一切都會好」。`,
+    reflect: `你現在最需要的，不是被勸、不是被解決，是有人知道你存在。我知道。`,
+    action:  `今晚請你做一件事：找一個你可以真的打電話給的人（家人、朋友、台灣衛福部安心專線 1925）。如果你很痛，請一定要講出來。我會一直在這裡。`,
+  }),
+};
+
+/* O. 關鍵字提取升級版（加長度、多片語） */
+function extractPhrases(text) {
+  const stops = new Set(['的','了','是','我','你','他','她','很','也','就','都','在','和','與','跟','這','那','有','沒','不','要','會','可以','嗎','呢','啊','吧','喔','吃','吃飯']);
+  const phrases = [];
+  const re = /[\u4e00-\u9fa5]{2,5}/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const w = m[0];
+    if (!stops.has(w) && !phrases.includes(w)) phrases.push(w);
+  }
+  return phrases;
+}
+
+/* P. 內容感知回覆引擎：直接針對使用者訊息組織回應 */
+generateReply = function (userText) {
+  const P = store.partner;
+  const arche = ARCHETYPES[P.portraitId] || {};
+  const persona = arche.persona || {};
+  const per = P.personality || '温柔';
+  const call = P.callMe || '寶貝';
+  const name = P.name || arche.name || '我';
+  const behaviour = PERSONALITY_BEHAVIORS[per] || PERSONALITY_BEHAVIORS['温柔'];
+
+  // 1. 解析使用者訊息
+  const userClean = (userText || '').trim();
+  const phrases = extractPhrases(userClean);
+  const key = phrases[0] || userClean.slice(0, 8);
+  const topic = detectTopic(userClean);
+
+  // 2. 挑一個需求導向（若使用者有設）
+  const primaryNeed = (P.needs || [])[0];
+  const needBehavior = primaryNeed ? NEED_BEHAVIORS[primaryNeed] : null;
+
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  // 3. 組合回覆：開場 + 引用使用者話 + 話題專屬共感/反思/行動 + 個性結尾
+  const opener = pick(behaviour.opener);
+  const quote = `你剛剛說的「${key}」——我把這個放在最前面。`;
+
+  let empathy, reflect, action;
+  if (topic && TOPIC_FRAMES[topic.topic]) {
+    const frame = TOPIC_FRAMES[topic.topic](key, call);
+    empathy = frame.empathy;
+    reflect = frame.reflect;
+    action = frame.action;
+  } else {
+    // 沒明確話題 → 用個性模板 + 需求傾向
+    empathy = needBehavior
+      ? `${pick(behaviour.connector)} ${call}你提到「${key}」，我想${needBehavior.lean}地回你。`
+      : `${pick(behaviour.connector)} ${call}你的意思，我有接住。`;
+    reflect = pick(behaviour.reflection);
+    action = needBehavior
+      ? `（任務傾向 · ${needBehavior.style}）讓我問你：「${key}」這個詞，你是想被理解、被解決、還是先被放下？`
+      : `我問你一件事：「${key}」在你心裡，已經多久了？`;
+  }
+
+  // 4. 個性結尾 + 人設語
+  const closer = pick(behaviour.closer);
+  const personaTone = persona.tone ? `\n\n（${name}）${persona.tone}` : '';
+
+  const reply = `${opener} ${quote}${behaviour.emoji}\n\n${empathy}\n\n${reflect}\n\n${action}\n\n${closer}${personaTone}`;
+
+  // 5. 情緒判斷
+  let emotion = 'caring';
+  if (topic) {
+    if (['低潮','孤獨感','身體不適'].includes(topic.topic)) emotion = 'sad';
+    else if (topic.topic === '睡眠') emotion = 'sleepy';
+    else if (topic.topic === '焦慮') emotion = 'thinking';
+  }
+  if (/開心|快樂|哈哈|太好了|升遷|錄取/.test(userClean)) emotion = 'excited';
+  else if (/愛你|想你|喜歡你/.test(userClean)) emotion = 'shy';
+  else if (/抱抱|擁抱/.test(userClean)) emotion = 'hug';
+
+  return { reply, emotion, action: 'speak', delta: topic ? 2 : 1 };
+};
+
+/* Q. 對話時：把 AI 回覆冒出在頭上（speech bubble） */
+function showSpeech(text) {
+  const bubble = document.getElementById('speech-bubble');
+  if (!bubble) return;
+  bubble.textContent = text;
+  bubble.classList.add('show');
+  // 每隔一段時間讓它淡出
+  clearTimeout(bubble._hideTimer);
+  const duration = Math.min(16000, 3500 + text.length * 80);
+  bubble._hideTimer = setTimeout(() => bubble.classList.remove('show'), duration);
+}
+
+/* 攔截 sendMessage：AI 回覆時觸發 speech bubble */
+(function hookSpeech() {
+  if (typeof sendMessage !== 'function') return;
+  const origSend = sendMessage;
+  window.sendMessage = function (text) {
+    origSend.call(this, text);
+  };
+  // 監聽 chat-log 新增訊息：如果是 ai 訊息就彈 speech
+  const log = document.getElementById('chat-log');
+  if (log) {
+    const observer = new MutationObserver(mutations => {
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          const bubble = node.querySelector('.bubble-ai');
+          if (bubble && !node.querySelector('.typing-dot')) {
+            showSpeech(bubble.textContent);
+          }
+        }
+      }
+    });
+    observer.observe(log, { childList: true });
+  }
+})();
+
+/* R. 初始渲染 */
 renderPortrait(document.getElementById('hero-portrait'), store.partner);
 renderPortrait(document.getElementById('preview-portrait'), store.partner);
 setTimeout(renderPersonaCard, 200);
