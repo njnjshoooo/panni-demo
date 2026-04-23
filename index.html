@@ -124,114 +124,103 @@
   .topup-btn{cursor:pointer;transition:all .2s}
   .topup-btn:hover{background:var(--fg);color:var(--bg)}
   .topup-btn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-  /* === 手機優先：整體框架 === */
-  main{ max-width: 520px; margin: 0 auto; }
-  .max-w-7xl{ max-width: 520px !important; }
-  .max-w-5xl{ max-width: 520px !important; }
-  .max-w-6xl{ max-width: 520px !important; }
-  body{ background: #EEEAE2; }
-  main, header > div { background: var(--bg); }
-  header{ max-width: 520px; left: 50% !important; transform: translateX(-50%); right: auto !important; }
-  footer{ max-width: 520px; margin-left: auto; margin-right: auto; }
+  /* ============================================================
+     === 桌面優先 · RWD === 預設桌面版，@media 處理手機 ===
+     ============================================================ */
 
-  /* Create：強制單欄 + 小型預覽 */
-  #view-create .grid.md\:grid-cols-\[380px_1fr\]{ grid-template-columns: 1fr !important; gap: 18px !important; }
-  #view-create .sticky.md\:top-28{ position: relative !important; top: auto !important; }
-  #view-create #preview-portrait{ max-width: 220px; margin: 0 auto; }
-  .cat-panel h2,.cat-panel h3{ font-size: 18px; }
-  .grid.md\:grid-cols-\[1\.2fr_1fr\]{ grid-template-columns: 1fr !important; }
-  #view-home .hero{ font-size: 44px !important; }
-  #view-home #hero-portrait{ max-width: 280px; margin: 16px auto 0; }
+  body{ background: #FAFAF8; }
 
-  /* OMO 卡片堆疊 */
-  .grid.md\:grid-cols-3{ grid-template-columns: 1fr !important; gap: 20px !important; }
-  .grid.md\:grid-cols-2{ grid-template-columns: 1fr !important; }
+  /* ---------- 通用樣式（桌面/手機共用） ---------- */
+  /* 照片可見性保證（所有裝置） */
+  .portrait-card{ display:block !important; min-height: 180px; }
+  .portrait-card img{ opacity:1 !important; visibility:visible !important; display:block !important; background:#E8E5DE; }
+  #hero-portrait, #preview-portrait, #chat-portrait{ display:block !important; }
+  .pick-card{ min-height: 180px; }
+  .pick-card img{ opacity:1 !important; visibility:visible !important; min-height: 100%; }
 
-  /* Chat：縮小人像，放大對話 */
-  .chat-grid{ grid-template-columns: 1fr !important; height: calc(100vh - 180px) !important; grid-template-rows: 100px 1fr; gap: 8px !important; }
-  #chat-portrait{ width: 80px !important; height: 100px; position: absolute; right: 12px; top: 12px; }
-  #chat-portrait .portrait-card{ width: 80px; height: 100px; aspect-ratio: auto; }
-  #chat-portrait .portrait-label,#chat-portrait .portrait-num,#chat-portrait .portrait-badge{ display:none; }
-  .chat-grid > .card:first-child{ display: flex; flex-direction: row; align-items: center; padding: 10px 14px; min-height: 100px; }
-  .chat-grid > .card:first-child #mood-badge{ position: static; flex: 1; text-align: left; padding-right: 100px; }
-  .chat-grid > .card:first-child .progress-track,
-  .chat-grid > .card:first-child div[class*="affinity"]{ display:none; }
-  .chat-grid > .card:first-child::before{
-    content: attr(data-sub); display:block; position:absolute; bottom:8px; left:14px;
-    font-size: 9px; letter-spacing:.2em; color: var(--fg-muted); text-transform: uppercase;
-  }
-
-  /* 固定底部 Create 操作列 */
-  .create-nav{ position: sticky; bottom: 0; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); padding: 12px 16px; margin: 20px -16px 0; border-top: 1px solid var(--border); z-index: 10; }
-
-  /* 底部 Tab Bar 導航 */
-  .tabbar{ position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 520px; background: #fff; border-top: 1px solid var(--border); z-index: 60; display: flex; padding: 10px 6px env(safe-area-inset-bottom); }
-  .tabbar button{ flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; background:transparent; border:none; cursor:pointer; padding: 6px 4px; font-size: 10px; letter-spacing: .15em; color: var(--fg-subtle); text-transform: uppercase; }
-  .tabbar button.active{ color: var(--fg); }
-  .tabbar button .icon{ font-size: 18px; line-height: 1; }
-
-  main{ padding-bottom: 80px; }
-
-  /* 照片飾品疊加層 */
+  /* 照片疊加層 */
   .portrait-card .acc-layer{ position:absolute; inset:0; pointer-events:none; z-index: 2; }
   .portrait-card .hair-tint{ position:absolute; left:0; right:0; top:0; height: 38%; pointer-events:none; mix-blend-mode: color; z-index: 3; opacity: .55; }
   .portrait-card .outfit-tint{ position:absolute; left:0; right:0; bottom:0; height: 22%; pointer-events:none; mix-blend-mode: multiply; opacity: .65; z-index: 3; }
 
-  /* 360 旋轉展示（以 3D 轉動 illusion） */
+  /* 360 旋轉 */
   .portrait-card.spinning img{ animation: spin3d 4s linear infinite; }
   @keyframes spin3d { 0%{transform: perspective(800px) rotateY(0deg)} 50%{transform: perspective(800px) rotateY(15deg) scale(1.03)} 100%{transform: perspective(800px) rotateY(0deg)} }
   .spin-btn{ position:absolute; right:10px; top:10px; z-index: 5; width: 28px; height: 28px; border-radius: 9999px; background: rgba(255,255,255,.92); border: 1px solid var(--border-strong); font-size: 12px; cursor: pointer; display:flex; align-items:center; justify-content:center; }
 
-  /* 人物知識庫 · 人設卡 */
-  .persona-card{ border: 1px solid var(--border); padding: 12px 14px; margin-top: 12px; background: #F7F5F0; font-size: 12px; line-height: 1.7; }
-  .persona-title{ font-size: 10px; letter-spacing:.25em; color: var(--fg-muted); text-transform: uppercase; margin-bottom: 6px; }
-  .persona-row{ display:flex; gap: 8px; margin: 3px 0; }
-  .persona-row .k{ min-width: 48px; color: var(--fg-muted); font-size: 11px; }
+  /* 人設卡 */
+  .persona-card{ border: 1px solid var(--border); padding: 14px 16px; margin-top: 14px; background: #F7F5F0; font-size: 12.5px; line-height: 1.7; }
+  .persona-title{ font-size: 10px; letter-spacing:.25em; color: var(--fg-muted); text-transform: uppercase; margin-bottom: 8px; }
+  .persona-row{ display:flex; gap: 8px; margin: 4px 0; }
+  .persona-row .k{ min-width: 56px; color: var(--fg-muted); font-size: 11px; }
 
   /* 禮物 Gallery */
-  .gift-gallery{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-  .gift-item{ border: 1px solid var(--border); background: #fff; padding: 14px 8px 10px; text-align:center; transition: transform .25s; }
+  .gift-gallery{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+  .gift-item{ border: 1px solid var(--border); background: #fff; padding: 16px 10px 12px; text-align:center; transition: transform .25s; }
   .gift-item:hover{ transform: translateY(-2px); border-color: var(--fg); }
-  .gift-item .emo{ font-size: 32px; line-height: 1; margin-bottom: 8px; display: block; }
-  .gift-item .gname{ font-size: 11px; color: var(--fg); line-height: 1.35; }
+  .gift-item .emo{ font-size: 36px; line-height: 1; margin-bottom: 10px; display: block; }
+  .gift-item .gname{ font-size: 12px; color: var(--fg); line-height: 1.4; }
   .gift-item .gprice{ display: none; }
 
-  /* 鎖定（商業模式） */
+  /* 鎖定 */
   .pick-card.locked{ position: relative; }
   .pick-card.locked::before{ content:''; position:absolute; inset:0; background: rgba(0,0,0,.55); z-index: 2; }
   .pick-card.locked::after{ content: attr(data-tier); position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-size:10px; letter-spacing:.2em; z-index:3; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'><rect x='5' y='11' width='14' height='10' rx='1'/><path d='M8 11V7a4 4 0 0 1 8 0v4'/></svg>") center 30% / 22px no-repeat; padding-top: 48px; }
 
-  /* ===== 手機版照片可見性修復 ===== */
-  .portrait-card{ display:block !important; min-height: 180px; }
-  .portrait-card img{ opacity:1 !important; visibility:visible !important; display:block !important; background:#E8E5DE; }
-  #hero-portrait, #preview-portrait, #chat-portrait{ display:block !important; }
-  #hero-portrait{ width: 280px !important; max-width: calc(100vw - 48px); aspect-ratio: 4/5; }
-  #preview-portrait{ width: 220px !important; max-width: calc(100vw - 48px); aspect-ratio: 4/5; }
-  #view-home #hero-portrait .portrait-card,
-  #view-create #preview-portrait .portrait-card{ width: 100%; height: 100%; }
-  .chat-grid{ grid-template-rows: 124px 1fr !important; }
-  #chat-portrait{ width: 80px !important; height: 100px !important; position: absolute !important; right: 12px !important; top: 12px !important; }
-  #chat-portrait .portrait-card{ width: 80px !important; height: 100px !important; aspect-ratio: auto !important; min-height: 100px; }
-  .pick-card{ min-height: 180px; }
-  .pick-card img{ opacity:1 !important; visibility:visible !important; min-height: 100%; }
+  /* 解鎖彈窗 */
+  .unlock-mask{ position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); z-index: 120; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .unlock-mask.show{ display: flex; }
+  .unlock-box{ background: #fff; border: 1px solid var(--fg); max-width: 480px; width: 100%; padding: 28px 28px 22px; animation: unlockIn .4s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes unlockIn{ from{ opacity:0; transform: translateY(20px) scale(.96); } to{ opacity:1; transform: none; } }
+  .unlock-title{ font-family: "Noto Serif TC", serif; font-size: 24px; font-weight: 500; margin-bottom: 6px; }
+  .unlock-sub{ font-size: 13px; color: var(--fg-muted); margin-bottom: 20px; }
+  .unlock-card-head{ display:flex; gap:14px; align-items:center; margin-bottom: 18px; padding: 12px; border: 1px solid var(--border); }
+  .unlock-card-head img{ width: 60px; height: 76px; object-fit: cover; background: #eee; }
+  .unlock-card-head .nm{ font-weight:600; font-size: 15px; }
+  .unlock-card-head .gr{ font-size: 11px; color: var(--fg-muted); letter-spacing: .15em; text-transform: uppercase; }
+  .unlock-plan{ border: 1px solid var(--fg); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all .2s; display: flex; justify-content: space-between; align-items: center; }
+  .unlock-plan:hover{ background: var(--fg); color: var(--bg); }
+  .unlock-plan .pn{ font-weight: 600; font-size: 15px; }
+  .unlock-plan .pp{ font-family:"Noto Serif TC",serif; font-size: 20px; }
+  .unlock-plan .pd{ font-size: 10px; letter-spacing: .15em; color: currentColor; opacity: .7; }
+  .unlock-plan.rec{ background: var(--fg); color: var(--bg); }
+  .unlock-close{ display:block; text-align:center; margin-top: 12px; padding: 12px; background: transparent; border: 1px solid var(--border); width: 100%; cursor: pointer; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+  .unlock-close:hover{ border-color: var(--fg); }
 
-  /* ===== Chat 2.0：大頭像 + 頭頂氣泡 ===== */
-  .chat-grid{ grid-template-columns: 1fr !important; grid-template-rows: auto 1fr auto !important; height: calc(100vh - 160px) !important; gap: 8px !important; }
-  #view-chat .card.chat-stage{ position: relative; overflow: visible !important; display: flex !important; flex-direction: column !important; align-items: center; padding: 70px 10px 10px !important; min-height: 380px; }
-  #chat-portrait{ width: 220px !important; height: 280px !important; position: relative !important; top: auto !important; right: auto !important; margin: 0 auto !important; }
-  #chat-portrait .portrait-card{ width: 220px !important; height: 280px !important; aspect-ratio: auto !important; }
-  #chat-portrait .portrait-label, #chat-portrait .portrait-badge{ display: block !important; }
-  #chat-portrait .portrait-label{ font-size: 9px; padding: 4px 8px; }
+  /* 收藏 */
+  .save-bar{ display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding: 14px 18px; border: 1px solid var(--border); background: #fff; }
+  .save-bar .lbl{ font-size: 11px; letter-spacing: .18em; color: var(--fg-muted); text-transform: uppercase; }
+  .save-bar .cnt{ font-weight: 600; font-size: 13px; margin-top: 2px; }
+  .save-btn{ padding: 10px 18px; border: 1px solid var(--fg); background: #fff; color: var(--fg); cursor: pointer; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; transition: all .2s; }
+  .save-btn:hover{ background: var(--fg); color: #fff; }
+  .save-btn.saved{ background: var(--fg); color: #fff; }
+  .saved-grid{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .saved-card{ aspect-ratio: 4/5; border: 1px solid var(--border); position: relative; overflow: hidden; cursor: pointer; transition: all .25s; }
+  .saved-card img{ width:100%; height:100%; object-fit: cover; object-position: center top; display: block; }
+  .saved-card:hover{ transform: translateY(-4px); border-color: var(--fg); box-shadow: 0 8px 20px -8px rgba(0,0,0,.2); }
+  .saved-card .s-name{ position:absolute; left:0; right:0; bottom:0; padding: 12px 10px 10px; background: linear-gradient(transparent, rgba(0,0,0,.75)); color: #fff; font-size: 12px; }
+  .saved-card .s-name small{ display:block; font-size: 10px; opacity:.8; margin-top: 2px; letter-spacing: .1em; }
+  .saved-card .rm{ position: absolute; top: 8px; right: 8px; width: 26px; height:26px; background: rgba(0,0,0,.7); color: #fff; border: none; cursor: pointer; font-size: 13px; display:flex; align-items:center; justify-content:center; border-radius: 50%; }
 
-  /* 頭頂氣泡（固定尺寸 + 內部捲動） */
+  /* ---------- 桌面版：Chat 雙欄 ---------- */
+  .chat-grid{ display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 18px; height: calc(100vh - 160px); }
+  #view-chat .card.chat-stage{ position: relative; overflow: visible; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 90px 20px 30px; }
+  #chat-portrait{ width: 320px; height: 400px; margin: 0 auto; position: relative; }
+  #chat-portrait .portrait-card{ width: 100%; height: 100%; aspect-ratio: auto; }
+  #chat-portrait .portrait-label{ font-size: 10px; padding: 4px 10px; }
+  #view-chat #mood-badge{ position: absolute; top: 16px; left: 20px; font-size: 11px; letter-spacing: .15em; color: var(--fg-muted); text-transform: uppercase; z-index: 5; }
+  #view-chat .card.chat-stage .chat-header{ position: absolute; bottom: 20px; left: 20px; right: 20px; padding: 10px 16px; background: rgba(255,255,255,.9); backdrop-filter: blur(8px); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 11px; letter-spacing: .15em; color: var(--fg-muted); text-transform: uppercase; }
+  .chat-header .pn{ color: var(--fg); font-weight: 600; }
+
+  /* 頭頂氣泡 */
   .speech{
-    position: absolute; left: 50%; transform: translateX(-50%) translateY(-6px);
-    top: 8px;
-    width: 82%; max-width: 320px;
-    max-height: 110px; overflow-y: auto;
+    position: absolute; left: 50%; transform: translateX(-50%) translateY(0);
+    top: 20px;
+    width: calc(100% - 60px); max-width: 380px;
+    max-height: 160px; overflow-y: auto;
     background: #fff; border: 1.5px solid var(--fg);
-    padding: 10px 14px; font-size: 13px; line-height: 1.55;
-    border-radius: 14px; box-shadow: 0 8px 24px -10px rgba(0,0,0,.25);
+    padding: 14px 18px; font-size: 14px; line-height: 1.6;
+    border-radius: 16px; box-shadow: 0 12px 30px -12px rgba(0,0,0,.25);
     z-index: 20; opacity: 0; pointer-events: none;
     white-space: pre-wrap; word-break: break-word;
     transition: opacity .3s ease;
@@ -241,19 +230,70 @@
   .speech::after{
     content: ''; position: absolute;
     left: 50%; bottom: -10px; transform: translateX(-50%);
-    border: 9px solid transparent;
+    border: 10px solid transparent;
     border-top-color: #fff;
-    filter: drop-shadow(0 1px 0 var(--fg));
+    filter: drop-shadow(0 2px 0 var(--fg));
   }
-  /* 隱藏舊 mood-badge 視覺（由 speech 代替） */
-  #view-chat #mood-badge{ display: none !important; }
-  /* Chat 標題列 */
-  .chat-header{ display:flex; align-items:center; justify-content:space-between; padding: 6px 12px; font-size: 10px; letter-spacing: .12em; color: var(--fg-muted); text-transform: uppercase; border-top: 1px solid var(--border); background: rgba(255,255,255,.6); margin-top: 8px; }
-  .chat-header .pn{ color: var(--fg); font-weight: 600; }
 
-  /* 對話 log（次要元素） */
-  #view-chat #chat-log{ font-size: 12.5px; padding: 10px 12px !important; }
-  #view-chat .bubble-ai, #view-chat .bubble-user{ padding: 10px 14px; font-size: 12.5px; line-height: 1.6; max-width: 90%; }
+  /* Create 操作列：桌面版維持 inline */
+  .create-nav{ padding-top: 24px; margin-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+  /* Tab Bar：桌面隱藏，用頂部 nav */
+  .tabbar{ display: none; }
+
+  /* Hero Portrait 預設大小（桌面） */
+  #hero-portrait{ max-width: 440px; aspect-ratio: 4/5; }
+  #preview-portrait{ max-width: 320px; aspect-ratio: 4/5; margin: 0 auto; }
+
+  /* ---------- 手機版斷點 @media (max-width: 768px) ---------- */
+  @media (max-width: 768px){
+    main{ max-width: 100%; padding: 0 0 80px; }
+    header{ left: 0 !important; right: 0 !important; transform: none !important; }
+    body{ background: var(--bg); }
+
+    /* 網格降為單欄 */
+    #view-create .grid.md\:grid-cols-\[380px_1fr\]{ grid-template-columns: 1fr !important; gap: 18px !important; }
+    #view-create .sticky.md\:top-28{ position: relative !important; top: auto !important; }
+    .grid.md\:grid-cols-\[1\.2fr_1fr\]{ grid-template-columns: 1fr !important; }
+    .grid.md\:grid-cols-3{ grid-template-columns: 1fr !important; gap: 18px !important; }
+    .grid.md\:grid-cols-2{ grid-template-columns: 1fr !important; }
+
+    /* 字體與 Hero 調小 */
+    #view-home .hero{ font-size: 44px !important; }
+    .cat-panel h2,.cat-panel h3{ font-size: 18px; }
+
+    /* Hero / Preview 縮小 */
+    #hero-portrait{ max-width: 280px !important; margin: 16px auto 0 !important; }
+    #preview-portrait{ max-width: 220px !important; margin: 0 auto !important; }
+
+    /* Chat 單欄堆疊 */
+    .chat-grid{ grid-template-columns: 1fr !important; grid-template-rows: auto 1fr auto !important; height: calc(100vh - 180px) !important; gap: 10px !important; }
+    #view-chat .card.chat-stage{ padding: 70px 10px 10px !important; min-height: 360px; }
+    #chat-portrait{ width: 220px !important; height: 280px !important; }
+    #view-chat .card.chat-stage .chat-header{ position: relative !important; bottom: auto; left: auto; right: auto; margin-top: 8px; font-size: 10px; }
+    #view-chat #mood-badge{ top: 10px; left: 12px; font-size: 10px; }
+    .speech{ width: 82%; max-width: 320px; top: 10px; padding: 10px 14px; font-size: 13px; max-height: 110px; }
+
+    /* 禮物 Gallery 手機 3 欄 */
+    .gift-gallery{ grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .gift-item{ padding: 14px 8px 10px; }
+    .gift-item .emo{ font-size: 32px; margin-bottom: 8px; }
+
+    /* 收藏網格 手機 2 欄 */
+    .saved-grid{ grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+    /* Create 操作列：手機固定底部 */
+    .create-nav{ position: sticky; bottom: 60px; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); padding: 12px 16px !important; margin: 20px -16px 0 !important; border-top: 1px solid var(--border); z-index: 10; }
+
+    /* Tab Bar：手機顯示 */
+    .tabbar{ position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--border); z-index: 60; display: flex; padding: 8px 6px env(safe-area-inset-bottom); }
+    .tabbar button{ flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; background:transparent; border:none; cursor:pointer; padding: 6px 4px; font-size: 10px; letter-spacing: .15em; color: var(--fg-subtle); text-transform: uppercase; }
+    .tabbar button.active{ color: var(--fg); }
+    .tabbar button .icon{ font-size: 18px; line-height: 1; }
+
+    /* 隱藏桌面版 Header Nav，避免重複（行動版選單本身就有） */
+    header nav.hidden.md\:flex{ display: none !important; }
+  }
 
   /* ===== 解鎖彈窗 ===== */
   .unlock-mask{ position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(6px); z-index: 120; display: none; align-items: center; justify-content: center; padding: 20px; }
