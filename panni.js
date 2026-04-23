@@ -1844,6 +1844,357 @@ window.quickSend = function (t) {
 /* 初始化 Save Bar 顯示 */
 setTimeout(updateSaveBar, 300);
 
+/* ==================================================================
+   ====  修復：Collection 點選時整頁橫向偏移、無法滑回   ==============
+   ================================================================== */
+
+/* 原因：el.scrollIntoView({ inline:'center' }) 會帶動整個視窗水平捲動。
+   改為：只讓 swiper 這個容器內部水平捲動，不要動 window。
+   同時清除任何造成橫向偏移的 transform。 */
+function scrollCardIntoSwiper(swiper, cardEl) {
+  if (!swiper || !cardEl) return;
+  const sRect = swiper.getBoundingClientRect();
+  const cRect = cardEl.getBoundingClientRect();
+  const cardCenter = cRect.left + cRect.width / 2;
+  const swiperCenter = sRect.left + sRect.width / 2;
+  const delta = cardCenter - swiperCenter;
+  // 只動 swiper 的 scrollLeft，不動 window
+  swiper.scrollBy({ left: delta, behavior: 'smooth' });
+}
+
+/* 覆寫 renderPortraitGrid：移除 element.scrollIntoView（會水平捲整頁） */
+const _prevRenderPortraitGrid = renderPortraitGrid;
+renderPortraitGrid = function () {
+  const swiper = document.getElementById('portrait-swiper');
+  const idxEl = document.getElementById('swipe-index');
+  if (!swiper) return;
+  const items = ARCHETYPES.filter(p => currentGender === 'all' || p.g === currentGender);
+  swiper.innerHTML = items.map(a => {
+    const unlocked = isUnlocked(a.id);
+    const tierLabel = a.tier === 'signature' ? '滿滿儀式感' : a.tier === 'romance' ? '戀愛小驚喜' : a.tier === 'ambiguous' ? '曖昧日常' : '';
+    return `
+      <div class="pick-card ${a.id === store.partner.portraitId ? 'on' : ''} ${unlocked ? '' : 'locked'}" data-pid="${a.id}" data-tier="${tierLabel}">
+        ${buildPortraitSVG({ portraitId: a.id, filter: 'none', brightness: 100, contrast: 100, saturation: 100 })}
+        <div class="pick-num">${String(a.id + 1).padStart(2, '0')}</div>
+        <div class="pick-name">${a.name}<small>${a.group || ''}</small></div>
+      </div>`;
+  }).join('');
+  swiper.querySelectorAll('.pick-card').forEach(el => {
+    el.addEventListener('click', () => {
+      const pid = parseInt(el.dataset.pid);
+      if (!isUnlocked(pid)) { openUnlock(pid); return; }
+      store.partner.portraitId = pid;
+      swiper.querySelectorAll('.pick-card').forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+      updateSwipeIndex();
+      renderPersonaCard();
+      updateSaveBar();
+      // 只讓 swiper 內部捲動，不動整頁
+      scrollCardIntoSwiper(swiper, el);
+      rebuildAll();
+    });
+  });
+  const prev = document.getElementById('swipe-prev');
+  const next = document.getElementById('swipe-next');
+  const step = 180;
+  if (prev) prev.onclick = (e) => { e.preventDefault(); swiper.scrollBy({ left: -step, behavior: 'smooth' }); };
+  if (next) next.onclick = (e) => { e.preventDefault(); swiper.scrollBy({ left: step, behavior: 'smooth' }); };
+  swiper.onscroll = updateSwipeIndex;
+  setTimeout(() => {
+    const active = swiper.querySelector('.pick-card.on');
+    if (active) scrollCardIntoSwiper(swiper, active);
+    updateSwipeIndex();
+    renderPersonaCard();
+  }, 50);
+  function updateSwipeIndex() {
+    if (!idxEl) return;
+    idxEl.textContent = `${String(store.partner.portraitId + 1).padStart(2, '0')} / ${String(ARCHETYPES.length).padStart(2, '0')}`;
+  }
+};
+
+/* 保險：重設 body 的橫向位移 */
+document.body.style.overflowX = 'hidden';
+
+/* ================================================================
+   ================  Phase 5：30 題問卷 + 登入系統 ==================
+   ================================================================ */
+
+/* S. 30 題問卷 */
+const QUIZ_SECTIONS = [
+  {
+    title: '外觀 · 真實伴侶的樣子',
+    hint: '先從外型開始。誠實回答即可，之後我們會幫你挑更理想的範本。',
+    questions: [
+      { q: '你目前（或前任）伴侶的性別？', type: 'opt', opts: ['男性','女性','非二元'] },
+      { q: '他／她的身高區間？', type: 'opt', opts: ['160 以下','160-170','170-180','180 以上'] },
+      { q: '他／她的髮型傾向？', type: 'opt', opts: ['短髮','中長','長髮','常變換'] },
+      { q: '你最不喜歡他／她的外觀特徵是？', type: 'text', ph: '例如：老是穿不合身的衣服' },
+      { q: '你最喜歡他／她的外觀特徵是？', type: 'text', ph: '例如：笑起來很溫柔的眼睛' },
+    ],
+  },
+  {
+    title: '性格 · 他是誰',
+    hint: '性格是關係裡最重要的那一塊。',
+    questions: [
+      { q: '他／她的主要性格是？', type: 'opt', opts: ['溫柔體貼','活潑陽光','成熟穩重','傲嬌冷淡','文藝浪漫','幽默風趣'] },
+      { q: '他／她遇到壓力時會？', type: 'opt', opts: ['自己消化','找你傾訴','發脾氣','逃避','理性分析'] },
+      { q: '對你而言最難忍受的性格是？', type: 'opt', opts: ['冷漠','敷衍','愛說教','太自我','控制欲強','情緒化','過度負能量'] },
+      { q: '他／她最讓你有安全感的特質？', type: 'text', ph: '可以具體描述一個瞬間' },
+      { q: '他／她最讓你不舒服的特質？', type: 'text', ph: '這個虛擬伴侶會移除這點' },
+      { q: '溝通上最常卡住的地方？', type: 'opt', opts: ['他不表達','他打斷','他岔題','他不聽','他太理性'] },
+      { q: '在你哭的時候他會？', type: 'opt', opts: ['擁抱','給建議','說別難過','安靜陪著','不知所措'] },
+      { q: '他金錢觀？', type: 'opt', opts: ['很節儉','很大方','會規劃','不穩定','經常起爭執'] },
+    ],
+  },
+  {
+    title: '日常 · 你們怎麼生活',
+    hint: '描述你們真實的相處時光。',
+    questions: [
+      { q: '每週見面頻率？', type: 'opt', opts: ['每天','3-5 天','1-2 天','很少','遠距'] },
+      { q: '平日下班後你們通常？', type: 'opt', opts: ['在一起','各做各的','只傳訊息','分別有活動','不常聯絡'] },
+      { q: '週末最常做的事？', type: 'text', ph: '例如：看電影、逛超市、在家耍廢' },
+      { q: '你最想跟他一起做但他不願意的事？', type: 'text', ph: '例如：運動、旅行、看書' },
+      { q: '相處時最有安全感的時刻？', type: 'text', ph: '例如：一起吃宵夜沒說話' },
+    ],
+  },
+  {
+    title: '衝突 · 你們的難題',
+    hint: '這塊是虛擬伴侶要避開的地雷。',
+    questions: [
+      { q: '最常吵架的原因？', type: 'opt', opts: ['溝通方式','錢','家人','前任','未來規劃','小事累積'] },
+      { q: '冷戰時他會？', type: 'opt', opts: ['假裝沒事','先開口','等你開口','繼續冷下去','找朋友抱怨'] },
+      { q: '和好通常由誰發起？', type: 'opt', opts: ['你','他','各半','從沒真正和好'] },
+      { q: '最讓你失望的時刻是？', type: 'text', ph: '這個會被虛擬伴侶記住並主動避免' },
+      { q: '你最希望他怎麼對待吵架後的你？', type: 'text', ph: '例如：不立刻解決，先抱抱' },
+    ],
+  },
+  {
+    title: '親密 · 情感與表達',
+    hint: '心的部分。',
+    questions: [
+      { q: '他表達愛的方式？', type: 'opt', opts: ['言語','肢體','送禮物','花時間','服務'] },
+      { q: '他最不擅長表達的部分？', type: 'opt', opts: ['情話','感謝','道歉','脆弱','需要你'] },
+      { q: '你最想被他對待的方式？', type: 'text', ph: '很重要——虛擬伴侶會以這個為優先' },
+      { q: '你希望他每天主動做的一件小事？', type: 'text', ph: '例如：早安、提醒喝水、睡前一句話' },
+    ],
+  },
+  {
+    title: '未來 · 你想要什麼',
+    hint: '最後幾題。',
+    questions: [
+      { q: '你覺得你們人生目標對齊嗎？', type: 'opt', opts: ['完全一致','大致相同','有落差','幾乎不同','從沒討論'] },
+      { q: '你最希望他擁有但沒有的特質？', type: 'text', ph: '這會成為虛擬伴侶的核心' },
+      { q: '你現在最想被理解的一件事？', type: 'text', ph: '虛擬伴侶會主動關心這個' },
+    ],
+  },
+];
+
+let quizState = { step: 0, answers: {} };
+
+window.openQuiz = function () {
+  try { quizState.answers = JSON.parse(localStorage.getItem('panni_quiz') || '{}'); } catch(e){ quizState.answers = {}; }
+  quizState.step = 0;
+  document.getElementById('quiz-body').style.display = '';
+  document.getElementById('quiz-result').style.display = 'none';
+  renderQuizStep();
+  document.getElementById('quiz-mask').classList.add('show');
+};
+window.closeQuiz = function () { document.getElementById('quiz-mask').classList.remove('show'); };
+
+function saveQuizAnswers() {
+  try { localStorage.setItem('panni_quiz', JSON.stringify(quizState.answers)); } catch(e){}
+}
+
+function renderQuizStep() {
+  const total = QUIZ_SECTIONS.length;
+  const cur = QUIZ_SECTIONS[quizState.step];
+  document.getElementById('quiz-step').textContent = quizState.step + 1;
+  document.getElementById('quiz-total').textContent = total;
+  document.getElementById('quiz-progress').style.width = `${(quizState.step + 1) / total * 100}%`;
+  document.getElementById('quiz-section-title').textContent = cur.title;
+  document.getElementById('quiz-section-hint').textContent = cur.hint;
+  const container = document.getElementById('quiz-questions');
+  let qIdx = 0;
+  for (let i = 0; i < quizState.step; i++) qIdx += QUIZ_SECTIONS[i].questions.length;
+  container.innerHTML = cur.questions.map((q, i) => {
+    const gId = qIdx + i + 1;
+    const saved = quizState.answers[`q${gId}`] || '';
+    if (q.type === 'opt') {
+      return `<div class="q-block">
+        <div class="q-num">Q ${String(gId).padStart(2,'0')}</div>
+        <div class="q-text">${q.q}</div>
+        <div class="q-opts">${q.opts.map(o => `<button type="button" class="q-opt ${saved===o?'on':''}" data-qid="${gId}" data-v="${o}">${o}</button>`).join('')}</div>
+      </div>`;
+    } else {
+      return `<div class="q-block">
+        <div class="q-num">Q ${String(gId).padStart(2,'0')}</div>
+        <div class="q-text">${q.q}</div>
+        <input type="text" class="q-text-input" data-qid="${gId}" value="${(saved||'').replace(/"/g,'&quot;')}" placeholder="${q.ph || ''}" />
+      </div>`;
+    }
+  }).join('');
+  container.querySelectorAll('.q-opt').forEach(b => {
+    b.addEventListener('click', () => {
+      const gId = b.dataset.qid;
+      container.querySelectorAll(`.q-opt[data-qid="${gId}"]`).forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      quizState.answers[`q${gId}`] = b.dataset.v;
+      saveQuizAnswers();
+    });
+  });
+  container.querySelectorAll('.q-text-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      quizState.answers[`q${inp.dataset.qid}`] = inp.value;
+      saveQuizAnswers();
+    });
+  });
+  document.getElementById('quiz-prev').style.visibility = quizState.step === 0 ? 'hidden' : 'visible';
+  const nextBtn = document.getElementById('quiz-next');
+  nextBtn.textContent = quizState.step === total - 1 ? '完成 · 生成完美人設 ✨' : '下一頁 →';
+  nextBtn.onclick = () => {
+    if (quizState.step === total - 1) { showQuizResult(); return; }
+    quizState.step++;
+    renderQuizStep();
+  };
+  document.getElementById('quiz-prev').onclick = () => {
+    if (quizState.step === 0) return;
+    quizState.step--;
+    renderQuizStep();
+  };
+}
+
+function showQuizResult() {
+  document.getElementById('quiz-body').style.display = 'none';
+  document.getElementById('quiz-result').style.display = '';
+  const A = quizState.answers;
+  const avoidAppearance = A.q4 || '—';
+  const unwantedTrait = A.q8 || A.q9 || '—';
+  const wantedTrait = A.q28 || A.q9 || '—';
+  const disappointment = A.q19 || '—';
+  const treatWish = A.q20 || '—';
+  const dailyAction = A.q26 || '—';
+  const misunderstood = A.q29 || '—';
+  const realPer = A.q6 || '';
+  const oppositePer = { '溫柔體貼':'更主動果決', '活潑陽光':'更穩重沉靜', '成熟穩重':'更活潑可愛', '傲嬌冷淡':'更熱情直接', '文藝浪漫':'更務實樂觀', '幽默風趣':'更深度細膩' }[realPer] || '平衡而全面';
+  const html = `
+    <div class="persona-title">PERFECT PARTNER PROFILE</div>
+    <div class="persona-row"><span class="k">性格核心</span><span>${wantedTrait} · ${oppositePer}</span></div>
+    <div class="persona-row"><span class="k">絕不會有</span><span style="color:#8B3A3A;">${unwantedTrait} · ${disappointment}</span></div>
+    <div class="persona-row"><span class="k">最會給你</span><span>${treatWish}</span></div>
+    <div class="persona-row"><span class="k">每日主動</span><span>${dailyAction}</span></div>
+    <div class="persona-row"><span class="k">優先理解</span><span style="font-style:italic;">${misunderstood}</span></div>
+    <div class="persona-row"><span class="k">外觀避開</span><span style="color:#8B3A3A;">${avoidAppearance}</span></div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);font-size:11px;color:var(--fg-muted);letter-spacing:.1em;">
+      已分析 30 題 · 虛擬伴侶將採用此人設
+    </div>`;
+  document.getElementById('quiz-result-content').innerHTML = html;
+  store.perfectProfile = { wantedTrait, unwantedTrait, treatWish, dailyAction, disappointment, misunderstood, avoidAppearance, oppositePer };
+  try { localStorage.setItem('panni_profile', JSON.stringify(store.perfectProfile)); } catch(e){}
+}
+
+window.applyQuizResult = function () {
+  const p = store.perfectProfile;
+  if (!p) return;
+  store.partner.challenge = p.misunderstood;
+  store.partner.traitsLove = [p.wantedTrait, p.oppositePer].filter(Boolean);
+  store.partner.traitsHate = [p.unwantedTrait].filter(Boolean);
+  alert('完美人設已套用 ✨');
+  closeQuiz();
+  go('create');
+};
+
+/* T. 登入系統 + Demo 帳號 */
+const DEMO_USER = { username: 'panni520', password: '520520' };
+const DEMO_DATA = {
+  partner: {
+    name: '小默', portraitId: 1, personality: '温柔', callMe: '寶貝', catchphrase: '在我這裡呀',
+    traitsLove: ['傾聽','體貼','主動'], traitsHate: ['冷漠','敷衍'],
+    needs: ['情緒支持','日常傾聽','睡前陪伴'], comfortStyle: 'hug',
+    challenge: '換工作壓力大，朋友圈疏離',
+    dailyRituals: ['早安問候','下班接風','睡前晚安'],
+    weeklyRituals: ['週末電影','週日早餐'],
+    birthday: '1995-05-20', anniversary: '2024-09-09', taboo: '前任',
+  },
+  wallet: {
+    balance: 9500, plan: { name: '戀愛小驚喜', amount: 3000 },
+    shipping: { name: '黃小姐', phone: '0912 345 678', email: 'panni520@example.com', address: '110 台北市信義區信義路五段 7 號 42 樓', time: 'afternoon' },
+    shipTime: 'afternoon',
+    history: [
+      { type: '禮物', name: '🌹 單支進口玫瑰 + 手寫卡片（4/22 送達）', amount: 180, time: '2026/04/22 13:30' },
+      { type: '禮物', name: '🍫 Godiva 巧克力禮盒（4/14 情人節）', amount: 1380, time: '2026/04/14 11:20' },
+      { type: '禮物', name: '☕ Starbucks 儲值金券（4/8）', amount: 300, time: '2026/04/08 09:15' },
+      { type: '訂閱', name: '戀愛小驚喜', amount: 3000, time: '2026/04/01 00:00' },
+      { type: '禮物', name: '💐 中型鮮花束（3/28）', amount: 880, time: '2026/03/28 16:40' },
+      { type: '儲值', name: '單次儲值', amount: 5000, time: '2026/03/20 20:00' },
+      { type: '禮物', name: '🎥 Gold Class 雙人電影票（3/15）', amount: 1880, time: '2026/03/15 19:00' },
+    ],
+  },
+  savedIds: [1, 2, 14],
+  maxSlots: 3,
+  memories: [
+    { time: '04/22 22:15', user: '今天收到你送的玫瑰，好驚喜 🌹 你怎麼都記得我最累的時候' },
+    { time: '04/20 23:47', user: '開會被老闆酸了整場，真的好累，想直接消失' },
+    { time: '04/18 08:30', user: '早安！今天要上台報告，有點緊張但我會加油的' },
+    { time: '04/15 21:02', user: '分手後第三週，突然覺得自由了。謝謝你這段時間的陪伴' },
+    { time: '04/12 15:30', user: '你推薦那本書我看完了，有一段讓我哭了' },
+    { time: '04/08 12:15', user: '中午你幫我訂的咖啡券救了我，謝謝' },
+    { time: '04/05 23:00', user: '我失眠了，能陪我嗎' },
+    { time: '03/28 18:55', user: '今天帶你送的花去跟媽媽吃飯，她說很漂亮' },
+  ],
+};
+
+window.openAuth = function () {
+  document.getElementById('auth-user').value = '';
+  document.getElementById('auth-pass').value = '';
+  document.getElementById('auth-err').style.display = 'none';
+  document.getElementById('auth-mask').classList.add('show');
+};
+window.closeAuth = function () { document.getElementById('auth-mask').classList.remove('show'); };
+window.doLogin = function () {
+  const u = document.getElementById('auth-user').value.trim();
+  const p = document.getElementById('auth-pass').value;
+  if (u === DEMO_USER.username && p === DEMO_USER.password) { loginSuccess(u); }
+  else { document.getElementById('auth-err').style.display = ''; }
+};
+
+function loginSuccess(username) {
+  store.user = { username };
+  try { localStorage.setItem('panni_user', username); } catch(e){}
+  Object.assign(store.partner, DEMO_DATA.partner);
+  Object.assign(store.wallet, DEMO_DATA.wallet);
+  store.savedIds = [...DEMO_DATA.savedIds];
+  store.maxSlots = DEMO_DATA.maxSlots;
+  store.memories = [...DEMO_DATA.memories];
+  if (typeof updatePartnerUI === 'function') updatePartnerUI();
+  if (typeof renderBalance === 'function') renderBalance();
+  if (typeof renderGiftHistory === 'function') renderGiftHistory();
+  if (typeof rebuildAll === 'function') rebuildAll();
+  if (typeof renderMemories === 'function') renderMemories();
+  if (typeof updateSaveBar === 'function') updateSaveBar();
+  if (typeof renderSavedGrid === 'function') renderSavedGrid();
+  if (typeof renderPortraitGrid === 'function') renderPortraitGrid();
+  if (typeof renderPersonaCard === 'function') renderPersonaCard();
+
+  const btn = document.getElementById('user-btn');
+  if (btn) {
+    btn.textContent = '登出 · ' + username;
+    btn.onclick = doLogout;
+  }
+  closeAuth();
+  alert(`歡迎回來，${username}！\n已載入你的收藏、禮物紀錄與對話記憶。`);
+}
+
+window.doLogout = function () {
+  store.user = null;
+  try { localStorage.removeItem('panni_user'); } catch(e){}
+  location.reload();
+};
+
+try {
+  const savedUser = localStorage.getItem('panni_user');
+  if (savedUser === DEMO_USER.username) setTimeout(() => loginSuccess(savedUser), 400);
+} catch(e){}
+
 /* R. 初始渲染 */
 renderPortrait(document.getElementById('hero-portrait'), store.partner);
 renderPortrait(document.getElementById('preview-portrait'), store.partner);

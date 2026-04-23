@@ -353,6 +353,7 @@
     </nav>
     <div class="flex items-center gap-3">
       <div class="text-xs mono text-neutral-600 hidden sm:block">餘額 <span class="font-semibold text-black" id="balance-label">NT$ 0</span></div>
+      <button id="user-btn" onclick="openAuth()" class="btn-ghost text-xs" style="padding:8px 14px;">登入</button>
       <button data-go="omo" class="btn-primary text-xs" style="padding:8px 14px;">儲值</button>
     </div>
   </div>
@@ -912,6 +913,18 @@
 <!-- MEMORY -->
 <section id="view-memories" class="view">
   <div class="max-w-5xl mx-auto px-6 py-12">
+    <!-- Create 完美伴侶入口 -->
+    <div class="mb-12 card p-6" style="background:linear-gradient(135deg, #F5F3EF, #E8E5DE);">
+      <div class="flex items-center gap-6 flex-wrap">
+        <div style="flex:1; min-width:240px;">
+          <div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-2">Create · 完美另一半分析</div>
+          <h3 class="serif text-2xl font-medium mb-2">填答 30 題真實伴侶問卷</h3>
+          <p class="text-sm text-neutral-600 leading-relaxed">誠實描述你目前（或前任）伴侶的樣子、習慣、優點與缺點。我們會為你生成「沒有這些缺點」的完美虛擬另一半人設。</p>
+        </div>
+        <button onclick="openQuiz()" class="btn-primary" style="padding:14px 26px;">開始填答 →</button>
+      </div>
+    </div>
+
     <!-- 我的收藏（人物） -->
     <div class="mb-12">
       <div class="text-xs tracking-[.25em] text-neutral-500 uppercase mb-3">Collection · 我的收藏</div>
@@ -971,6 +984,64 @@
     <button class="unlock-close" onclick="closeBuySlot()">先不要</button>
   </div>
 </div>
+
+<!-- 登入彈窗 -->
+<div id="auth-mask" class="unlock-mask">
+  <div class="unlock-box" style="max-width: 420px;">
+    <div class="unlock-title">登入 PanNi</div>
+    <div class="unlock-sub">登入你的帳號以同步虛擬伴侶、禮物紀錄與對話記憶。</div>
+    <div class="mb-3">
+      <div class="text-[10px] tracking-[.2em] uppercase text-neutral-500 mb-2">帳號</div>
+      <input id="auth-user" type="text" class="input" placeholder="username" />
+    </div>
+    <div class="mb-4">
+      <div class="text-[10px] tracking-[.2em] uppercase text-neutral-500 mb-2">密碼</div>
+      <input id="auth-pass" type="password" class="input" placeholder="password" />
+    </div>
+    <div id="auth-err" class="text-xs mb-3" style="color:#B00;display:none;">帳號或密碼錯誤</div>
+    <button onclick="doLogin()" class="btn-primary w-full" style="padding:12px;">登入</button>
+    <div class="text-[10px] tracking-widest text-neutral-400 uppercase mt-3 text-center">Demo 帳號：panni520 / 520520</div>
+    <button class="unlock-close" onclick="closeAuth()">取消</button>
+  </div>
+</div>
+
+<!-- 30 題測驗 -->
+<div id="quiz-mask" class="unlock-mask" style="align-items:flex-start;padding-top:40px;overflow-y:auto;">
+  <div class="unlock-box" style="max-width:620px;margin:0 auto;">
+    <div id="quiz-body">
+      <div class="unlock-sub" style="margin-bottom:8px;">STEP <span id="quiz-step">1</span> / <span id="quiz-total">6</span></div>
+      <div class="progress-track mb-5" style="height:2px;"><div class="progress-fill" id="quiz-progress" style="width:16%"></div></div>
+      <div class="unlock-title" id="quiz-section-title">外觀 · 真實伴侶的樣子</div>
+      <div class="unlock-sub" id="quiz-section-hint">誠實回答，我們會依此為你生成沒有這些缺點的完美虛擬另一半。</div>
+      <div id="quiz-questions"></div>
+      <div class="flex justify-between items-center mt-6 pt-4" style="border-top: 1px solid var(--border);">
+        <button id="quiz-prev" class="btn-ghost text-sm" style="padding:10px 18px;">← 上一頁</button>
+        <button id="quiz-next" class="btn-primary text-sm" style="padding:10px 20px;">下一頁 →</button>
+      </div>
+    </div>
+    <!-- 結果頁 -->
+    <div id="quiz-result" style="display:none;">
+      <div class="unlock-title">你的完美虛擬伴侶人設</div>
+      <div class="unlock-sub">根據你對真實伴侶的描述，我們去除了這些讓你不舒服的部分，並放大你最需要的特質。</div>
+      <div id="quiz-result-content" class="persona-card" style="background:#FFF;"></div>
+      <button onclick="applyQuizResult()" class="btn-primary w-full mt-4" style="padding:12px;">套用到我的虛擬伴侶</button>
+      <button class="unlock-close" onclick="closeQuiz()">先關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 問卷題目樣式 -->
+<style>
+  .q-block{ margin-bottom: 22px; }
+  .q-num{ font-family:"JetBrains Mono",monospace; font-size: 10px; letter-spacing: .25em; color: var(--fg-subtle); margin-bottom: 6px; }
+  .q-text{ font-size: 14px; font-weight: 500; margin-bottom: 10px; line-height: 1.5; }
+  .q-opts{ display: flex; flex-wrap: wrap; gap: 6px; }
+  .q-opt{ padding: 8px 14px; border: 1px solid var(--border-strong); background: transparent; cursor: pointer; font-size: 12px; transition: all .2s; border-radius: 2px; font-family: inherit; color: var(--fg); }
+  .q-opt:hover{ background: #F2F2F0; }
+  .q-opt.on{ background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .q-text-input{ width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border-strong); padding: 8px 0; font-size: 14px; outline: none; color: var(--fg); font-family: inherit; }
+  .q-text-input:focus{ border-bottom-color: var(--fg); }
+</style>
 
 <div id="health-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm">
   <div class="card p-10 max-w-sm m-4 text-center">
